@@ -1,3 +1,4 @@
+from sqlalchemy import null
 from extensions import db
 from datetime import datetime
 
@@ -10,10 +11,9 @@ class User(db.Model):
     password = db.Column(db.String(100), nullable=False)
     referral_code = db.Column(db.String(10), unique=True, nullable=False)
     referrals_count = db.Column(db.Integer, default=0)
-    profile_picture = db.Column(db.String(255), default='')  # Default profile picture
+    profile_picture = db.Column(db.String(255), default='')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # Relationship with Referral table
+    pass_token = db.Column(db.String(255), nullable=True, default=null)
     referrals = db.relationship('Referral', backref='referrer', lazy=True)
 
 class Referral(db.Model):
