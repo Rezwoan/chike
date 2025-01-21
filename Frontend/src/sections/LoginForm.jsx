@@ -49,7 +49,7 @@ const LoginForm = () => {
 
         try {
             const response = await fetch(
-                "https://backend-python.playchike.com/auth/login",
+                "http://127.0.0.1:5000/auth/login",
                 {
                     method: "POST",
                     headers: {
@@ -72,7 +72,7 @@ const LoginForm = () => {
                 });
 
                 // Redirect to home/dashboard
-                navigate("/welcome");
+                navigate("/profile");
             } else {
                 setMessage(
                     result.error || "Invalid credentials. Please try again."

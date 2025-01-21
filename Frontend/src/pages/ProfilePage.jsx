@@ -5,7 +5,7 @@ const ProfilePage = () => {
     const [user, setUser] = useState(null); // To hold the profile data
     const [isLoading, setIsLoading] = useState(true); // To handle loading state
     const [error, setError] = useState(null); // To handle errors
-    const userId = 53; // Replace this with the actual logged-in user ID
+    // const userId = 53; // Replace this with the actual logged-in user ID
 
     useEffect(() => {
         const fetchProfileData = async () => {
