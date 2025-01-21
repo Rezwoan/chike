@@ -2,40 +2,55 @@ import React, { useState, useEffect } from "react";
 import Navbar2 from "../components/Navbar2";
 
 const ProfilePage = () => {
-    // Dummy user data
-    const [user, setUser] = useState({
-        name: "John Doe",
-        email: "johndoe@example.com",
-        totalReferrals: 150,
-        dailyReferrals: 10,
-        weeklyReferrals: 35,
-        totalRank: 5,
-        dailyRank: 2,
-        weeklyRank: 3,
-        triviaPointsToday: 50,
-        totalPoints: 500,
-        referralLink: "https://example.com/signup?ref=XYZ123",
-    });
-
-    // Random avatar URL
-    const [avatarUrl, setAvatarUrl] = useState("");
+    const [user, setUser] = useState(null); // To hold the profile data
+    const [isLoading, setIsLoading] = useState(true); // To handle loading state
+    const [error, setError] = useState(null); // To handle errors
+    const userId = 53; // Replace this with the actual logged-in user ID
 
     useEffect(() => {
-        // Generate a random avatar URL
-        const randomId = Math.floor(Math.random() * 100) + 1;
-        setAvatarUrl(`https://avatar.iran.liara.run/public/${randomId}`);
-    }, []);
+        const fetchProfileData = async () => {
+            try {
+                const response = await fetch(
+                    `http://127.0.0.1:5000/profile/profile/${userId}`
+                );
+
+                if (!response.ok) {
+                    throw new Error("Failed to fetch profile data");
+                }
+
+                const data = await response.json();
+                setUser(data); // Set the profile data
+            } catch (error) {
+                console.error("Error fetching profile data:", error);
+                setError("Unable to fetch profile data. Please try again.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchProfileData();
+    }, [userId]);
+
+    // Handle copy referral link
+    const handleCopyLink = () => {
+        if (user && user.referralLink) {
+            navigator.clipboard.writeText(user.referralLink);
+            alert("Referral link copied to clipboard!");
+        }
+    };
 
     // Handle trivia button click
     const handleTriviaClick = () => {
         alert("Feature coming soon!");
     };
 
-    // Handle copy referral link
-    const handleCopyLink = () => {
-        navigator.clipboard.writeText(user.referralLink);
-        alert("Referral link copied to clipboard!");
-    };
+    if (isLoading) {
+        return <p className="text-center text-lg">Loading profile...</p>;
+    }
+
+    if (error) {
+        return <p className="text-center text-lg text-red-500">{error}</p>;
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-200">
@@ -46,7 +61,9 @@ const ProfilePage = () => {
                 {/* Profile Picture and User Info */}
                 <div className="flex flex-col items-center mb-8">
                     <img
-                        src={avatarUrl}
+                        src={`https://avatar.iran.liara.run/public/${Math.floor(
+                            Math.random() * 100 + 1
+                        )}`}
                         alt="Profile Avatar"
                         className="h-32 w-32 rounded-full border-4 border-green-600 mb-4"
                     />
@@ -60,7 +77,7 @@ const ProfilePage = () => {
                         Total Points
                     </h2>
                     <p className="text-5xl font-bold text-green-600">
-                        {user.totalPoints}
+                        {user.totalReferrals * 10}
                     </p>
                 </div>
 
@@ -132,9 +149,7 @@ const ProfilePage = () => {
                     {/* Trivia Points */}
                     <div className="p-4 bg-purple-100 rounded-lg shadow text-center">
                         <p className="text-lg font-bold">Trivia Points Today</p>
-                        <p className="text-3xl font-bold text-[#67358E]">
-                            {user.triviaPointsToday}
-                        </p>
+                        <p className="text-3xl font-bold text-[#67358E]">N/A</p>
                     </div>
                 </div>
 

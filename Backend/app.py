@@ -9,6 +9,8 @@ from referral.utils import get_daily_leaderboard, get_weekly_leaderboard
 from datetime import datetime
 from extensions import cache
 import os
+from profile.routes import profile_bp
+
 
 app = Flask(__name__)
 application = app
@@ -28,6 +30,8 @@ cache.init_app(app)
 app.register_blueprint(base_bp)  # Base routes
 app.register_blueprint(auth_bp, url_prefix='/auth')  # Auth routes
 app.register_blueprint(referral_bp, url_prefix='/referral')  # Referral routes
+app.register_blueprint(profile_bp, url_prefix='/profile')
+
 
 WINNER_DIR = "winner"
 DAILY_WINNER_FILE = os.path.join(WINNER_DIR, "daily_winner.txt")
