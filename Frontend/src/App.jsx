@@ -6,6 +6,7 @@ import SignupPage from "./pages/SignupPage";
 import WelcomeAboard from "./pages/WelcomeAbroad";
 import LoginPage from "./pages/LoginPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import SetPasswordPage from "./pages/SetPasswordPage";
 import ProfilePage from "./pages/ProfilePage";
 
 const App = () => {
@@ -23,6 +24,7 @@ const App = () => {
                         path="/reset-password"
                         element={<ResetPasswordPage />}
                     />
+                    <Route path="/set-password" element={<SetPasswordPage />} />
                     <Route path="/welcome" element={<WelcomeAboard />} />
 
                     <Route path="/profile" element={<ProfilePage />} />
