@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.svg"; // Import the logo image
 
-
 const Navbar = ({ leaderboardRef }) => {
     const [menuOpen, setMenuOpen] = useState(false);
     const navigate = useNavigate();
@@ -23,7 +22,8 @@ const Navbar = ({ leaderboardRef }) => {
                 {/* Logo Section */}
                 <div
                     onClick={() => navigate("/")}
-                    className="flex items-center space-x-2">
+                    className="flex items-center space-x-2"
+                >
                     <img src={logo} alt="Chi.ke Logo" className="h-8" />
                 </div>
 
@@ -52,11 +52,11 @@ const Navbar = ({ leaderboardRef }) => {
                     {/* Leaderboard Button */}
                     <button
                         //onClick={() => navigate("/")} // <-- Navigate to /leaderboard
-                        onClick={() => navigate("/")}
+                        onClick={() => navigate("/login")}
                         className="text-[#67358E] border-2 border-[#67358E] rounded-full hover:bg-[#67358E] hover:text-white transition duration-200"
                         style={{ width: "127px", height: "37px" }}
                     >
-                        Leaderboard
+                        Profile
                     </button>
 
                     {/* Join Waitlist Button */}
@@ -76,12 +76,14 @@ const Navbar = ({ leaderboardRef }) => {
                     <div className="flex flex-col space-y-4 py-4">
                         <button
                             onClick={() => navigate("/")}
-                            className="text-[#67358E] border-2 border-[#67358E] rounded-full hover:bg-[#67358E] hover:text-white transition duration-200 px-6 py-2">
+                            className="text-[#67358E] border-2 border-[#67358E] rounded-full hover:bg-[#67358E] hover:text-white transition duration-200 px-6 py-2"
+                        >
                             Leaderboard
                         </button>
                         <button
                             onClick={() => navigate("/")}
-                            className="bg-[#67358E] text-white rounded-full hover:bg-[#542C71] transition duration-200 px-6 py-2">
+                            className="bg-[#67358E] text-white rounded-full hover:bg-[#542C71] transition duration-200 px-6 py-2"
+                        >
                             Home
                         </button>
                     </div>

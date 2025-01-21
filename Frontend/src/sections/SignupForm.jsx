@@ -167,6 +167,18 @@ const SignupForm = () => {
                         {message}
                     </p>
                 )}
+
+                {/* Link to Login Page */}
+
+                <p className="text-center mt-4">
+                    Already have an account?{" "}
+                    <span
+                        onClick={() => navigate("/login")}
+                        className="text-green-600 font-bold cursor-pointer hover:underline"
+                    >
+                        Login
+                    </span>
+                </p>
             </div>
 
             {/* Right side image */}
