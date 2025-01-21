@@ -8,32 +8,26 @@ PASSWORD = "#cab466GOES601#"
 SMTP_SERVER = "mail.playchike.com"
 SMTP_PORT = 465  # Use 465 for SSL
 
-def send_email(receiver_email, name, referral_code):
-    """
-    Sends a plain-text email with a personalized message and referral link.
+def send_email(receiver_email,  referral_code):
 
-    Args:
-        receiver_email (str): Recipient's email address.
-        name (str): Recipient's name.
-        referral_code (str): Referral code to include in the email.
-    """
 
     # Create the referral link
-    referral_link = f"https://Playchike.com/signup?ref={referral_code}"
+    referral_link = f"https://Playchike.com/set-password?token={referral_code}"
 
     # Email subject
-    subject = "Welcome to Playchike.com! Here's Your Referral Link"
+    subject = "Welcome to Playchike.com! Here's Your set password link"
 
     # Plain-text Email Body
     plain_text_message = f"""
-Hello {name},
+Hello,
 
 Welcome to Playchike.com — we’re thrilled to have you with us!
 
 Below is your unique referral link:
 {referral_link}
 
-Copy and share this link with your friends and family. By sharing your referral link, you can earn exclusive rewards. Start sharing today!
+Please click on the link to set your password. 
+This link is only valid for one time use.
 
 If you have any questions, just reply to this email — we’re always here to help.
 
@@ -68,3 +62,10 @@ The Playchike.com Team
     except Exception as e:
         print(f"Failed to send email to {receiver_email}. Error: {e}")
 
+
+receiver_email = "johnwick10242048@gmail.com"
+name = "John"
+referral_code = "REF123456"
+
+# Call the send_email function from email_sender.py
+send_email(receiver_email, referral_code)
