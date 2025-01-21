@@ -7,12 +7,27 @@ const ResetPasswordForm = () => {
 
     // Form state
     const [email, setEmail] = useState("");
+    const [isEmailValid, setIsEmailValid] = useState(false);
+    const [emailError, setEmailError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState("");
 
     // Handle email input change
     const handleEmailChange = (e) => {
-        setEmail(e.target.value);
+        const value = e.target.value;
+        setEmail(value);
+        validateEmail(value);
+    };
+
+    // Validate email for a minimum of 8 characters
+    const validateEmail = (email) => {
+        if (email.length < 8) {
+            setIsEmailValid(false);
+            setEmailError("Email must be at least 8 characters long.");
+        } else {
+            setIsEmailValid(true);
+            setEmailError("");
+        }
     };
 
     // Handle form submission
@@ -73,14 +88,19 @@ const ResetPasswordForm = () => {
                         className="mb-2 p-3 text-lg rounded border border-gray-300"
                         required
                     />
+                    {emailError && (
+                        <p className="text-sm text-red-500 mb-2">
+                            {emailError}
+                        </p>
+                    )}
                     <button
                         type="submit"
                         className={`p-3 text-lg rounded text-white ${
-                            isLoading
+                            isLoading || !isEmailValid
                                 ? "bg-gray-400 cursor-not-allowed"
                                 : "bg-green-600 hover:bg-green-700"
                         }`}
-                        disabled={isLoading}
+                        disabled={isLoading || !isEmailValid}
                     >
                         {isLoading ? "Sending..." : "Reset Password"}
                     </button>
