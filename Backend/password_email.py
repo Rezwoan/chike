@@ -8,26 +8,34 @@ PASSWORD = "#cab466GOES601#"
 SMTP_SERVER = "mail.playchike.com"
 SMTP_PORT = 465  # Use 465 for SSL
 
-def send_email(receiver_email,  referral_code):
+def send_password_reset_email(receiver_email, name, password_token):
+    """
+    Sends a plain-text email with a link to reset the password using a password token.
 
+    Args:
+        receiver_email (str): Recipient's email address.
+        name (str): Recipient's name.
+        password_token (str): Unique password reset token.
+    """
 
-    # Create the referral link
-    referral_link = f"https://Playchike.com/set-password?token={referral_code}"
+    # Create the password reset link
+    reset_link = f"https://playchike.com/set-password?token={password_token}"
 
     # Email subject
-    subject = "Welcome to Playchike.com! Here's Your set password link"
+    subject = "Reset Your Password - Playchike.com"
 
     # Plain-text Email Body
     plain_text_message = f"""
-Hello,
+Hello {name},
 
-Welcome to Playchike.com — we’re thrilled to have you with us!
+We received a request to reset your password for your Playchike.com account.
 
-Below is your unique referral link:
-{referral_link}
+Click the link below to reset your password:
+{reset_link}
 
-Please click on the link to set your password. 
-This link is only valid for one time use.
+If you didn’t request a password reset, you can safely ignore this email.
+
+This link is only valid for one-time use and will expire after a certain period.
 
 If you have any questions, just reply to this email — we’re always here to help.
 
@@ -35,7 +43,7 @@ Cheers,
 The Playchike.com Team
 """
 
-    # Create a multipart message (to allow for flexibility if you add HTML later)
+    # Create a multipart message
     message = MIMEMultipart("alternative")
     message["From"] = SENDER_EMAIL
     message["To"] = receiver_email
@@ -45,27 +53,28 @@ The Playchike.com Team
     message.attach(MIMEText(plain_text_message, "plain"))
 
     try:
-        # Connect to the SMTP server over SSL on port 465
+        # Connect to the SMTP server over SSL
         with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT) as server:
 
             # Optional: Enable debug output for troubleshooting
             # server.set_debuglevel(1)
 
-            # Log in to the server
+            # Log in to the SMTP server
             server.login(SENDER_EMAIL, PASSWORD)
 
             # Send the email
             server.send_message(message)
 
-        print(f"Email sent successfully to {receiver_email}")
+        print(f"Password reset email sent successfully to {receiver_email}")
 
     except Exception as e:
-        print(f"Failed to send email to {receiver_email}. Error: {e}")
+        print(f"Failed to send password reset email to {receiver_email}. Error: {e}")
 
+# Example usage
+if __name__ == "__main__":
+    receiver_email = "sowadhossain017@gmail.com"
+    password_token = "TOKEN12345"
+    name = "Sowad"
 
-receiver_email = "johnwick10242048@gmail.com"
-name = "John"
-referral_code = "REF123456"
-
-# Call the send_email function from email_sender.py
-send_email(receiver_email, referral_code)
+    # Send the password reset email
+    send_password_reset_email(receiver_email, name, password_token)

@@ -1,29 +1,29 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import signupImage from "../assets/signup-person-image.png";
 
 const SetPasswordForm = () => {
     const navigate = useNavigate();
+    const location = useLocation();
 
-    // Form state
+    // Extract pass_token from URL query parameters
+    const queryParams = new URLSearchParams(location.search);
+    const pass_token = queryParams.get("token");
+
+    // State variables
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-    const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
-        useState(false);
+    const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
     const [isPasswordValid, setIsPasswordValid] = useState(false);
     const [passwordError, setPasswordError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState("");
 
     // Toggle password visibility
-    const togglePasswordVisibility = () => {
-        setIsPasswordVisible(!isPasswordVisible);
-    };
-
-    const toggleConfirmPasswordVisibility = () => {
+    const togglePasswordVisibility = () => setIsPasswordVisible(!isPasswordVisible);
+    const toggleConfirmPasswordVisibility = () =>
         setIsConfirmPasswordVisible(!isConfirmPasswordVisible);
-    };
 
     // Handle password input change
     const handlePasswordChange = (e) => {
@@ -62,28 +62,33 @@ const SetPasswordForm = () => {
         setMessage("");
         setIsLoading(true);
 
+        if (!pass_token) {
+            setMessage("Invalid or missing token.");
+            setIsLoading(false);
+            return;
+        }
+
         try {
-            // Make a request to the backend
-            const response = await fetch(
-                "https://backend-python.playchike.com/auth/set-password",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ password }),
-                }
-            );
+            const response = await fetch("http://127.0.0.1:5000/auth/set-password", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ pass_token, new_password: password }),
+            });
 
             if (response.ok) {
-                // Show a success message
-                setMessage("Password successfully set. You can now log in.");
-                setTimeout(() => navigate("/login"), 3000); // Redirect to login
+                const data = await response.json();
+                console.log("Success:", data);
+                setMessage("Password successfully set. Redirecting to login...");
+                setTimeout(() => navigate("/login"), 3000);
             } else {
+                const errorText = await response.text();
+                console.error("Failed:", errorText);
                 setMessage("Failed to set password. Please try again.");
             }
         } catch (error) {
-            console.error("Error:", error);
+            console.error("Error occurred:", error);
             setMessage("An error occurred. Please try again later.");
         } finally {
             setIsLoading(false);
@@ -119,9 +124,7 @@ const SetPasswordForm = () => {
                     </div>
                     <div className="relative mb-4">
                         <input
-                            type={
-                                isConfirmPasswordVisible ? "text" : "password"
-                            }
+                            type={isConfirmPasswordVisible ? "text" : "password"}
                             name="confirmPassword"
                             placeholder="Confirm Password"
                             value={confirmPassword}
@@ -137,17 +140,14 @@ const SetPasswordForm = () => {
                         </span>
                     </div>
                     {passwordError && (
-                        <p className="text-sm text-red-500 mb-2">
-                            {passwordError}
-                        </p>
+                        <p className="text-sm text-red-500 mb-2">{passwordError}</p>
                     )}
                     <button
                         type="submit"
-                        className={`p-3 text-lg rounded text-white ${
-                            isLoading || !isPasswordValid
-                                ? "bg-gray-400 cursor-not-allowed"
-                                : "bg-green-600 hover:bg-green-700"
-                        }`}
+                        className={`p-3 text-lg rounded text-white ${isLoading || !isPasswordValid
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-green-600 hover:bg-green-700"
+                            }`}
                         disabled={isLoading || !isPasswordValid}
                     >
                         {isLoading ? "Submitting..." : "Set Password"}
@@ -155,11 +155,10 @@ const SetPasswordForm = () => {
                 </form>
                 {message && (
                     <p
-                        className={`mt-4 text-center text-lg ${
-                            message.includes("successfully")
-                                ? "text-green-600"
-                                : "text-red-500"
-                        }`}
+                        className={`mt-4 text-center text-lg ${message.includes("successfully")
+                            ? "text-green-600"
+                            : "text-red-500"
+                            }`}
                     >
                         {message}
                     </p>

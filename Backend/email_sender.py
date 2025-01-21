@@ -68,3 +68,10 @@ The Playchike.com Team
     except Exception as e:
         print(f"Failed to send email to {receiver_email}. Error: {e}")
 
+# Example usage
+if __name__ == "__main__":
+    receiver_email = "sowadhossain017@gmail.com"
+    referral_token = "Test"
+    name = "sowad"
+    # Send the email
+    send_email(receiver_email, name ,referral_token)

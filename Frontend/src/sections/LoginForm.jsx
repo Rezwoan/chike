@@ -49,7 +49,7 @@ const LoginForm = () => {
 
         try {
             const response = await fetch(
-                "https://backend-python.playchike.com/auth/login",
+                "http://127.0.0.1:5000/auth/login",
                 {
                     method: "POST",
                     headers: {
@@ -71,8 +71,10 @@ const LoginForm = () => {
                     password: "",
                 });
 
-                // Redirect to home/dashboard
-                navigate("/welcome");
+                // Redirect to /profile and pass user data
+
+                navigate("/profile", { state: { user: result.user } });
+
             } else {
                 setMessage(
                     result.error || "Invalid credentials. Please try again."
@@ -131,11 +133,10 @@ const LoginForm = () => {
                     </div>
                     <button
                         type="submit"
-                        className={`p-3 text-lg rounded text-white ${
-                            isLoading || !isEmailValid
+                        className={`p-3 text-lg rounded text-white ${isLoading || !isEmailValid
                                 ? "bg-gray-400 cursor-not-allowed"
                                 : "bg-green-600 hover:bg-green-700"
-                        }`}
+                            }`}
                         disabled={isLoading || !isEmailValid}
                     >
                         {isLoading ? "Loading..." : "Login"}
@@ -143,11 +144,10 @@ const LoginForm = () => {
                 </form>
                 {message && (
                     <p
-                        className={`mt-4 text-center text-lg ${
-                            message.includes("successful")
+                        className={`mt-4 text-center text-lg ${message.includes("successful")
                                 ? "text-green-600"
                                 : "text-red-500"
-                        }`}
+                            }`}
                     >
                         {message}
                     </p>
