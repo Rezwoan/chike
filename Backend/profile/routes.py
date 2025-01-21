@@ -87,7 +87,7 @@ def get_profile(user_id):
         'dailyRank': daily_rank or "N/A",
         'weeklyRank': weekly_rank or "N/A",
         'triviaPointsToday': trivia_points_today,
-        'referralLink': f"https://PlayChike.com/signup?ref={user.referral_code}"
+        'referralLink': f"https://example.com/signup?ref={user.referral_code}"
     }
 
     return jsonify(response)
