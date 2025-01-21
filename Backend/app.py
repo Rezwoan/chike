@@ -14,7 +14,7 @@ from profile.routes import profile_bp
 
 app = Flask(__name__)
 application = app
-CORS(app, resources={r"/auth/*": {"origins": ["http://localhost:5174"]}})
+CORS(app, resources={r"/*": {"origins": ["http://localhost:5174"]}})
 
 # Load configurations
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'

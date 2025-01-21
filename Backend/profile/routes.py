@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, make_response
 from extensions import db
 from models import User, Referral
 from datetime import datetime, timedelta
@@ -22,9 +22,32 @@ def get_start_of_week():
     start_of_week = now - timedelta(days=now.weekday() + 1)
     return datetime(start_of_week.year, start_of_week.month, start_of_week.day, 0, 0, 0)
 
-@profile_bp.route('/profile/<int:user_id>', methods=['GET'])
-def get_profile(user_id):
-    """Fetch user profile data."""
+
+
+def handle_preflight():
+    """Handle CORS preflight (OPTIONS) requests."""
+    response = make_response()
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Methods"
+    )
+    response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+    return response
+
+@profile_bp.route('/profile', methods=['OPTIONS', 'POST'])
+def get_profile():
+    """Fetch user profile data via JSON body (POST)."""
+    # If the request method is OPTIONS, immediately return the preflight response
+    if request.method == 'OPTIONS':
+        return handle_preflight()
+    """Fetch user profile data via JSON body (POST)."""
+    data = request.get_json()
+    user_id = data.get("userID")  # Must match what your React code sends
+    print(user_id)
+    if not user_id:
+        return jsonify({'error': 'userID not provided'}), 400
+
     user = User.query.get(user_id)
     if not user:
         return jsonify({'error': 'User not found'}), 404
@@ -46,8 +69,14 @@ def get_profile(user_id):
         Referral.created_at >= start_of_week
     ).count()
 
-    # Total rank
-    total_rank = db.session.query(User).filter(User.referrals_count > user.referrals_count).count() + 1
+    # Calculate total rank
+    #  - The rank is 1 plus how many users have a referral count above this user's count
+    total_rank = (
+        db.session.query(User)
+        .filter(User.referrals_count > user.referrals_count)
+        .count()
+        + 1
+    )
 
     # Daily rank
     daily_rank_query = (
@@ -58,7 +87,8 @@ def get_profile(user_id):
         .order_by(db.desc('referrals_count'))
     )
     daily_rank = next(
-        (index + 1 for index, (u, count) in enumerate(daily_rank_query) if u.id == user.id), None
+        (index + 1 for index, (u, count) in enumerate(daily_rank_query) if u.id == user.id),
+        None
     )
 
     # Weekly rank
@@ -70,13 +100,14 @@ def get_profile(user_id):
         .order_by(db.desc('referrals_count'))
     )
     weekly_rank = next(
-        (index + 1 for index, (u, count) in enumerate(weekly_rank_query) if u.id == user.id), None
+        (index + 1 for index, (u, count) in enumerate(weekly_rank_query) if u.id == user.id),
+        None
     )
 
-    # Dummy trivia points today
-    trivia_points_today = 50  # Replace with logic if applicable
+    # Dummy trivia points today (replace with your own logic if needed)
+    trivia_points_today = 50
 
-    # Profile response
+    # Build response
     response = {
         'name': user.name,
         'email': user.email,
@@ -90,4 +121,4 @@ def get_profile(user_id):
         'referralLink': f"https://example.com/signup?ref={user.referral_code}"
     }
 
-    return jsonify(response)
+    return jsonify(response), 200
