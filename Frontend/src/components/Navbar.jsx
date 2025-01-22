@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.svg"; // Import the logo image
 
-
 const Navbar = ({ leaderboardRef }) => {
     const [menuOpen, setMenuOpen] = useState(false);
     const navigate = useNavigate();
@@ -10,6 +9,7 @@ const Navbar = ({ leaderboardRef }) => {
     const toggleMenu = () => {
         setMenuOpen(!menuOpen);
     };
+
     // Handle scroll to leaderboard
     const scrollToLeaderboard = () => {
         if (leaderboardRef && leaderboardRef.current) {
@@ -22,18 +22,19 @@ const Navbar = ({ leaderboardRef }) => {
             <div className="px-4 sm:px-6 md:px-8 lg:px-32 flex justify-between items-center p-6">
                 {/* Logo Section */}
                 <div
-                onClick={() => navigate("/")}
-                className="flex items-center space-x-2">
+                    onClick={() => navigate("/")}
+                    className="flex items-center space-x-2"
+                >
                     <img src={logo} alt="Chi.ke Logo" className="h-8" />
                 </div>
 
-                {/* Hamburger Menu */}
-                <div className="lg:hidden">
+                {/* Hamburger Menu for Mobile */}
+                <div className="lg:hidden flex items-center space-x-4">
+                    {/* Hamburger Menu */}
                     <button
                         onClick={toggleMenu}
                         className="text-black focus:outline-none"
                     >
-                        {/* Hamburger Icon */}
                         <svg
                             className="w-6 h-6"
                             fill="none"
@@ -49,14 +50,13 @@ const Navbar = ({ leaderboardRef }) => {
 
                 {/* Buttons Section - Hidden on Mobile */}
                 <div className="hidden lg:flex items-center space-x-6">
-                    {/* Leaderboard Button */}
+                    {/* Login Button */}
                     <button
-                        //onClick={() => navigate("/")} // <-- Navigate to /leaderboard
-                        onClick={scrollToLeaderboard}
-                        className="text-[#67358E] border-2 border-[#67358E] rounded-full hover:bg-[#67358E] hover:text-white transition duration-200"
+                        onClick={() => navigate("/login")}
+                        className="text-[#28A745] border-2 border-[#28A745] rounded-full hover:bg-[#28A745] hover:text-white transition duration-200"
                         style={{ width: "127px", height: "37px" }}
                     >
-                        Leaderboard
+                        Login
                     </button>
 
                     {/* Join Waitlist Button */}
@@ -75,13 +75,15 @@ const Navbar = ({ leaderboardRef }) => {
                 <div className="lg:hidden bg-white px-4 sm:px-6 md:px-8 lg:px-32 shadow-md">
                     <div className="flex flex-col space-y-4 py-4">
                         <button
-                            onClick={scrollToLeaderboard}
-                            className="text-[#67358E] border-2 border-[#67358E] rounded-full hover:bg-[#67358E] hover:text-white transition duration-200 px-6 py-2">
-                            Leaderboard
+                            onClick={() => navigate("/login")}
+                            className="text-[#28A745] border-2 border-[#28A745] rounded-full hover:bg-[#28A745] hover:text-white transition duration-200 px-6 py-2"
+                        >
+                            Login
                         </button>
                         <button
                             onClick={() => navigate("/signup")}
-                            className="bg-[#67358E] text-white rounded-full hover:bg-[#542C71] transition duration-200 px-6 py-2">
+                            className="bg-[#67358E] text-white rounded-full hover:bg-[#542C71] transition duration-200 px-6 py-2"
+                        >
                             Join Waitlist
                         </button>
                     </div>

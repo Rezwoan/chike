@@ -3,12 +3,13 @@ import { useNavigate } from "react-router-dom";
 import heroImage from "../assets/hero-image.png"; // Desktop image
 import mobileImage from "../assets/mobile-image.png"; // Mobile image
 
-const Hero = ({ DetailsRef }) => {
+const Hero = ({ leaderboardRef }) => {
     const navigate = useNavigate();
 
-    const handleScrollToDetails = () => {
-        if (DetailsRef.current) {
-            DetailsRef.current.scrollIntoView({ behavior: "smooth" });
+    // Handle scroll to leaderboard
+    const scrollToLeaderboard = () => {
+        if (leaderboardRef && leaderboardRef.current) {
+            leaderboardRef.current.scrollIntoView({ behavior: "smooth" });
         }
     };
 
@@ -37,10 +38,10 @@ const Hero = ({ DetailsRef }) => {
                             Join Waitlist
                         </button>
                         <button
-                            onClick={handleScrollToDetails}
+                            onClick={scrollToLeaderboard}
                             className="bg-white border-2 border-[#67358E] text-[#67358E] px-6 md:px-8 py-3 md:py-4 rounded-full font-semibold text-base md:text-lg hover:bg-[#67358E] hover:text-white transition duration-200"
                         >
-                            Learn More
+                            Leaderboard
                         </button>
                     </div>
                 </div>
@@ -80,10 +81,10 @@ const Hero = ({ DetailsRef }) => {
                         Join the Waitlist
                     </button>
                     <button
-                        onClick={handleScrollToDetails}
+                        onClick={scrollToLeaderboard}
                         className="bg-white border-2 border-purple-600 text-purple-600 py-3 rounded-full font-semibold text-lg hover:bg-purple-600 hover:text-white transition duration-200"
                     >
-                        Learn More
+                        Leaderboard
                     </button>
                 </div>
 

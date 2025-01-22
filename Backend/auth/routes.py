@@ -111,32 +111,30 @@ def setPassword():
         return jsonify({"error": str(e)}), 500
 
 
-@auth_bp.route('/reset-password-request', methods=['POST'])
+@auth_bp.route('/reset-password-request', methods=['OPTIONS', 'POST'])
 def reset_password():
+    if request.method == 'OPTIONS':
+        return handle_preflight()
+    
+    # Handle POST request
     data = request.get_json()
     email = data.get("email")
-
     if not email:
         return jsonify({"error": "Email is required"}), 400
 
-    # Check if the email exists
     user = User.query.filter_by(email=email).first()
     if user:
-        # Generate a unique token
         reset_token = generate_token()
         user.pass_token = reset_token
-
-        # Commit the token to the database
         db.session.commit()
 
-        # Call the separate function to send the email
         try:
             send_password_reset_email(user.email, user.name, reset_token)
         except Exception as e:
             return jsonify({"error": "Failed to send email"}), 500
 
-    # Always return this response for security reasons
     return jsonify({"message": "If this email is attached to an account, you will receive a password reset email shortly."}), 200
+
 
 
 @auth_bp.route('/login', methods=['OPTIONS', 'POST'])

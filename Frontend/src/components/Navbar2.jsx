@@ -52,11 +52,11 @@ const Navbar = ({ leaderboardRef }) => {
                     {/* Leaderboard Button */}
                     <button
                         //onClick={() => navigate("/")} // <-- Navigate to /leaderboard
-                        onClick={() => navigate("/login")}
+                        onClick={() => navigate("/")}
                         className="text-[#67358E] border-2 border-[#67358E] rounded-full hover:bg-[#67358E] hover:text-white transition duration-200"
                         style={{ width: "127px", height: "37px" }}
                     >
-                        Profile
+                        Leaderboard
                     </button>
 
                     {/* Join Waitlist Button */}

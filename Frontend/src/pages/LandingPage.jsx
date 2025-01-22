@@ -14,9 +14,9 @@ const LandingPage = () => {
     const detailsRef = useRef(null);
     return (
         <div>
-            <Navbar leaderboardRef={leaderboardRef} />
+            <Navbar />
             {/* Hero Section */}
-            <Hero DetailsRef={detailsRef} />
+            <Hero leaderboardRef={leaderboardRef} />
 
             {/* Join Waitlist Section */}
             <div ref={detailsRef}>

@@ -39,7 +39,7 @@ const ResetPasswordForm = () => {
         try {
             // Make a request to the backend
             const response = await fetch(
-                "https://backend-python.playchike.com/auth/reset-password",
+                "http://127.0.0.1:5000/auth/reset-password-request",
                 {
                     method: "POST",
                     headers: {
