@@ -91,6 +91,10 @@ def get_daily_leaderboard():
             timeframe = "Today"
             save_winner_to_file(user.name, referral_count, prize, timeframe, DAILY_WINNER_FILE)
 
+            # Increment the total_earned field
+            user.total_earned += 1
+            db.session.commit()
+
             # Send email
             send_winner_email(
                 receiver_email=user.email,
@@ -150,6 +154,10 @@ def get_weekly_leaderboard():
         prize = "$5"
         timeframe = "This Week"
         save_winner_to_file(user.name, referral_count, prize, timeframe, WEEKLY_WINNER_FILE)
+
+        # Increment the total_earned field
+        user.total_earned += 5
+        db.session.commit()
 
         # Send email
         send_winner_email(
