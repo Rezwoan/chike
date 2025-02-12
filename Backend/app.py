@@ -10,6 +10,7 @@ from datetime import datetime
 from extensions import cache
 import os
 from profile.routes import profile_bp
+from trivia.routes import trivia_bp
 
 
 app = Flask(__name__)
@@ -31,6 +32,7 @@ app.register_blueprint(base_bp)  # Base routes
 app.register_blueprint(auth_bp, url_prefix='/auth')  # Auth routes
 app.register_blueprint(referral_bp, url_prefix='/referral')  # Referral routes
 app.register_blueprint(profile_bp, url_prefix='/profile')
+app.register_blueprint(trivia_bp, url_prefix='/trivia')  # Trivia routes
 
 
 WINNER_DIR = "winner"
