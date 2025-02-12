@@ -118,7 +118,8 @@ def get_profile():
         'dailyRank': daily_rank or "N/A",
         'weeklyRank': weekly_rank or "N/A",
         'triviaPointsToday': trivia_points_today,
-        'referralLink': f"https://example.com/signup?ref={user.referral_code}"
+        'referralLink': f"https://example.com/signup?ref={user.referral_code}",
+        'total_earned' : user.total_earned
     }
 
     return jsonify(response), 200

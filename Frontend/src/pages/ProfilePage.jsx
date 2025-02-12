@@ -6,8 +6,16 @@ const ProfilePage = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
+    // //testing data
+    // const defaultUserState = {
+    //     id: 52,
+    //     email: "testuser@example.com",
+    //     name: "Test User",
+    // };
+
     // Get user data from location.state
     const userState = location.state?.user;
+    // const userState = defaultUserState;
 
     // If no user is passed, redirect to login
     useEffect(() => {
@@ -16,7 +24,7 @@ const ProfilePage = () => {
         }
     }, [userState, navigate]);
 
-    const [user, setUser] = useState(null); 
+    const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -77,7 +85,7 @@ const ProfilePage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-200">
+        <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-200">
             <Navbar2 />
 
             <div className="flex flex-col items-center p-6 max-w-4xl mx-auto shadow-lg rounded-lg bg-white mt-10 font-montserrat">
@@ -91,6 +99,14 @@ const ProfilePage = () => {
                     />
                     <h1 className="text-2xl font-bold mb-1">{user.name}</h1>
                     <p className="text-gray-600">{user.email}</p>
+                </div>
+
+                {/* Highlight: Total Earned */}
+                <div className="text-center mb-8">
+                    <h2 className="text-3xl font-bold text-[#67358E] mb-2">Total Earned</h2>
+                    <p className="text-5xl font-bold text-green-600">
+                        ${user.total_earned}
+                    </p>
                 </div>
 
                 {/* Highlight: Total Points */}
@@ -125,13 +141,13 @@ const ProfilePage = () => {
                 {/* Combined Statistics Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
                     {/* Total Referrals */}
-                    <div className="p-4 bg-blue-100 rounded-lg shadow text-center">
+                    <div className="p-4 bg-white-100 rounded-lg shadow text-center border border-gray-300">
                         <p className="text-lg font-bold">Total Referrals</p>
                         <p className="text-3xl font-bold text-green-600">{user.totalReferrals}</p>
                     </div>
 
                     {/* Daily Rank and Referrals */}
-                    <div className="p-4 bg-blue-100 rounded-lg shadow text-center">
+                    <div className="p-4 bg-whit-100 rounded-lg shadow text-center border border-gray-300">
                         <p className="text-lg font-bold">Daily Stats</p>
                         <p className="text-sm text-gray-600">
                             Rank: <span className="text-xl font-bold text-green-600">#{user.dailyRank}</span>
@@ -142,7 +158,7 @@ const ProfilePage = () => {
                     </div>
 
                     {/* Weekly Rank and Referrals */}
-                    <div className="p-4 bg-blue-100 rounded-lg shadow text-center">
+                    <div className="p-4 bg-white-100 rounded-lg shadow text-center border border-gray-300">
                         <p className="text-lg font-bold">Weekly Stats</p>
                         <p className="text-sm text-gray-600">
                             Rank: <span className="text-xl font-bold text-green-600">#{user.weeklyRank}</span>
@@ -153,7 +169,7 @@ const ProfilePage = () => {
                     </div>
 
                     {/* Trivia Points */}
-                    <div className="p-4 bg-purple-100 rounded-lg shadow text-center">
+                    <div className="p-4 bg-purple-100 rounded-lg shadow text-center border border-gray-300">
                         <p className="text-lg font-bold">Trivia Points Today</p>
                         <p className="text-3xl font-bold text-[#67358E]">N/A</p>
                     </div>
