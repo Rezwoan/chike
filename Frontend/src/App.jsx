@@ -12,7 +12,8 @@ import TriviaGame from "./pages/TriviaGame";
 import TriviaResult from "./pages/TriviaResult";
 
 const App = () => {
-    const [userAnswers, setUserAnswers] = useState(null); // Store user answers
+    const [userAnswers, setUserAnswers] = useState(null);
+    const [userId, setUserId] = useState(null); // Store userId globally
 
     return (
         <Router>
@@ -27,22 +28,46 @@ const App = () => {
                     />
                     <Route path="/set-password" element={<SetPasswordPage />} />
                     <Route path="/welcome" element={<WelcomeAboard />} />
-                    <Route path="/profile" element={<ProfilePage />} />
+
+                    {/* Profile Page - Receives userId from trivia & login */}
                     <Route
-                        path="/trivia"
+                        path="/profile"
                         element={
-                            <TriviaGame
-                                onFinish={(answers) => setUserAnswers(answers)}
+                            <ProfilePage
+                                userId={userId}
+                                setUserId={setUserId}
                             />
                         }
                     />
+
+                    {/* Trivia Game - Pass userId */}
+                    <Route
+                        path="/trivia"
+                        element={
+                            userId ? (
+                                <TriviaGame
+                                    userId={userId}
+                                    onFinish={(answers) =>
+                                        setUserAnswers(answers)
+                                    }
+                                />
+                            ) : (
+                                <LandingPage />
+                            )
+                        }
+                    />
+
+                    {/* Trivia Results - Pass userId and userAnswers */}
                     <Route
                         path="/trivia/results"
                         element={
-                            userAnswers ? (
-                                <TriviaResult userAnswers={userAnswers} />
+                            userId && userAnswers ? (
+                                <TriviaResult
+                                    userId={userId}
+                                    userAnswers={userAnswers}
+                                />
                             ) : (
-                                <LandingPage />
+                                <WelcomeAboard />
                             )
                         }
                     />

@@ -1,35 +1,53 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-const TriviaGame = ({ onFinish }) => {
+const TriviaGame = ({ userId, onFinish }) => {
     const [questions, setQuestions] = useState([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [userAnswers, setUserAnswers] = useState({});
     const [timeLeft, setTimeLeft] = useState(10);
     const [loading, setLoading] = useState(true);
-    const [showAd, setShowAd] = useState(false); // Ad popup state
+    const [showAd, setShowAd] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
+        if (!userId) {
+            console.error("User ID is required");
+            return;
+        }
+
         const fetchQuestions = async () => {
             try {
                 const response = await fetch(
-                    "http://127.0.0.1:5000/trivia/get_questions"
+                    "http://127.0.0.1:5000/trivia/get_questions",
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ user_id: userId }),
+                    }
                 );
+
                 const data = await response.json();
-                setQuestions(data.questions);
-                setLoading(false);
+
+                if (data.error) {
+                    alert(data.error); // Show cooldown message
+                    navigate("/profile");
+                } else {
+                    setQuestions(data.questions);
+                    setLoading(false);
+                }
             } catch (error) {
                 console.error("Error fetching trivia questions:", error);
                 setLoading(false);
             }
         };
+
         fetchQuestions();
-    }, []);
+    }, [userId, navigate]);
 
     useEffect(() => {
         if (timeLeft === 0) {
-            handleNextQuestion(null); // Auto move if no answer selected
+            handleNextQuestion(null);
         }
 
         const timer = setInterval(() => {
@@ -62,18 +80,19 @@ const TriviaGame = ({ onFinish }) => {
                 500
             );
         } else {
-            // Show Google Ad popup before redirecting
             setTimeout(() => {
                 setShowAd(true);
             }, 500);
         }
     };
 
-    const handleViewResults = () => {
-        onFinish(userAnswers); // Ensure answers are saved before navigating
-        setTimeout(() => {
-            navigate("/trivia/results");
-        }, 300);
+    const handleViewResults = async () => {
+        try {
+            onFinish(userAnswers);
+            navigate("/trivia/results", { state: { userId, userAnswers } }); // Pass userId & answers
+        } catch (error) {
+            console.error("Error navigating to results:", error);
+        }
     };
 
     if (loading)
