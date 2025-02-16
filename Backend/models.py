@@ -29,3 +29,13 @@ class Referral(db.Model):
     referrer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     referred_email = db.Column(db.String(100), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Winner(db.Model):
+    __tablename__ = 'winners'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    date = db.Column(db.DateTime, default=datetime.utcnow)
+    type = db.Column(db.String(50), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
