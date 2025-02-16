@@ -2,55 +2,43 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar2 from "../components/Navbar2";
 
-const ProfilePage = () => {
+const ProfilePage = ({ setUserId }) => {
     const location = useLocation();
     const navigate = useNavigate();
-
-    // //testing data
-    // const defaultUserState = {
-    //     id: 52,
-    //     email: "testuser@example.com",
-    //     name: "Test User",
-    // };
-
-    // Get user data from location.state
     const userState = location.state?.user;
-    // const userState = defaultUserState;
-
-    // If no user is passed, redirect to login
-    useEffect(() => {
-        if (!userState) {
-            navigate("/");
-        }
-    }, [userState, navigate]);
 
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
+        if (!userState) {
+            navigate("/");
+        } else {
+            setUserId(userState.id); // Store userId globally in App.jsx
+        }
+    }, [userState, navigate, setUserId]);
+
+    useEffect(() => {
         if (userState) {
             const fetchProfileData = async () => {
                 setIsLoading(true);
                 try {
-                    // 1. Await the fetch and store it in 'response'
-                    const response = await fetch("http://127.0.0.1:5000/profile/profile", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({ userID: userState.id }),
-                    });
+                    const response = await fetch(
+                        "http://127.0.0.1:5000/profile/profile",
+                        {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ userID: userState.id }),
+                        }
+                    );
 
-                    // 2. Check if response was OK
                     if (!response.ok) {
                         throw new Error("Failed to fetch profile data");
                     }
 
-                    // 3. Parse JSON
                     const data = await response.json();
                     setUser(data);
-
                 } catch (error) {
                     console.error("Error fetching profile data:", error);
                     setError("Unable to fetch profile data. Please try again.");
@@ -63,7 +51,6 @@ const ProfilePage = () => {
         }
     }, [userState]);
 
-    // Handle copy referral link
     const handleCopyLink = () => {
         if (user && user.referralLink) {
             navigator.clipboard.writeText(user.referralLink);
@@ -71,9 +58,13 @@ const ProfilePage = () => {
         }
     };
 
-    // Handle trivia button click
     const handleTriviaClick = () => {
-        alert("Feature coming soon!");
+        if (!user || !user.id) {
+            alert("User data not available. Please try again.");
+            return;
+        }
+
+        navigate("/trivia");
     };
 
     if (isLoading) {
@@ -87,7 +78,6 @@ const ProfilePage = () => {
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-200">
             <Navbar2 />
-
             <div className="flex flex-col items-center p-6 max-w-4xl mx-auto shadow-lg rounded-lg bg-white mt-10 font-montserrat">
                 <div className="flex flex-col items-center mb-8">
                     <img
@@ -101,29 +91,38 @@ const ProfilePage = () => {
                     <p className="text-gray-600">{user.email}</p>
                 </div>
 
-                {/* Highlight: Total Earned */}
+                {/* Total Earned */}
                 <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold text-[#67358E] mb-2">Total Earned</h2>
+                    <h2 className="text-3xl font-bold text-[#67358E] mb-2">
+                        Total Earned
+                    </h2>
                     <p className="text-5xl font-bold text-green-600">
                         ${user.total_earned}
                     </p>
                 </div>
 
-                {/* Highlight: Total Points */}
+                {/* Total Points */}
                 <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold text-[#67358E] mb-2">Total Points</h2>
+                    <h2 className="text-3xl font-bold text-[#67358E] mb-2">
+                        Total Points
+                    </h2>
                     <p className="text-5xl font-bold text-green-600">
-                        {user.totalReferrals * 10}
+                        {user.total_points}
                     </p>
                 </div>
 
-                {/* Referral Link Section */}
+                {/* Referral Link */}
                 <div className="flex flex-col items-center w-full mb-8">
-                    <h2 className="text-xl font-bold text-center mb-4">Share Your Referral Link</h2>
+                    <h2 className="text-xl font-bold text-center mb-4">
+                        Share Your Referral Link
+                    </h2>
                     <div className="flex items-center w-full max-w-md gap-3">
                         <input
                             type="text"
-                            value={user.referralLink || "No referral link available"}
+                            value={
+                                user.referralLink ||
+                                "No referral link available"
+                            }
                             readOnly
                             className="flex-1 p-2 text-sm rounded-lg border border-gray-300 bg-gray-100 text-gray-600"
                         />
@@ -138,40 +137,58 @@ const ProfilePage = () => {
                     </div>
                 </div>
 
-                {/* Combined Statistics Section */}
+                {/* Stats Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
                     {/* Total Referrals */}
                     <div className="p-4 bg-white-100 rounded-lg shadow text-center border border-gray-300">
                         <p className="text-lg font-bold">Total Referrals</p>
-                        <p className="text-3xl font-bold text-green-600">{user.totalReferrals}</p>
+                        <p className="text-3xl font-bold text-green-600">
+                            {user.totalReferrals}
+                        </p>
                     </div>
 
-                    {/* Daily Rank and Referrals */}
-                    <div className="p-4 bg-whit-100 rounded-lg shadow text-center border border-gray-300">
+                    {/* Daily Stats */}
+                    <div className="p-4 bg-white-100 rounded-lg shadow text-center border border-gray-300">
                         <p className="text-lg font-bold">Daily Stats</p>
                         <p className="text-sm text-gray-600">
-                            Rank: <span className="text-xl font-bold text-green-600">#{user.dailyRank}</span>
+                            Rank:{" "}
+                            <span className="text-xl font-bold text-green-600">
+                                #{user.dailyRank}
+                            </span>
                         </p>
                         <p className="text-sm text-gray-600 mt-2">
-                            Referrals: <span className="text-xl font-bold text-green-600">{user.dailyReferrals}</span>
+                            Referrals:{" "}
+                            <span className="text-xl font-bold text-green-600">
+                                {user.dailyReferrals}
+                            </span>
                         </p>
                     </div>
 
-                    {/* Weekly Rank and Referrals */}
+                    {/* Weekly Stats */}
                     <div className="p-4 bg-white-100 rounded-lg shadow text-center border border-gray-300">
                         <p className="text-lg font-bold">Weekly Stats</p>
                         <p className="text-sm text-gray-600">
-                            Rank: <span className="text-xl font-bold text-green-600">#{user.weeklyRank}</span>
+                            Rank:{" "}
+                            <span className="text-xl font-bold text-green-600">
+                                #{user.weeklyRank}
+                            </span>
                         </p>
                         <p className="text-sm text-gray-600 mt-2">
-                            Referrals: <span className="text-xl font-bold text-green-600">{user.weeklyReferrals}</span>
+                            Referrals:{" "}
+                            <span className="text-xl font-bold text-green-600">
+                                {user.weeklyReferrals}
+                            </span>
                         </p>
                     </div>
 
-                    {/* Trivia Points */}
+                    {/* Next Trivia Attempt */}
                     <div className="p-4 bg-purple-100 rounded-lg shadow text-center border border-gray-300">
-                        <p className="text-lg font-bold">Trivia Points Today</p>
-                        <p className="text-3xl font-bold text-[#67358E]">N/A</p>
+                        <p className="text-lg font-bold">Next Trivia Attempt</p>
+                        <p className="text-3xl font-bold text-[#67358E]">
+                            {user.remainingTriviaTime > 0
+                                ? `Wait ${user.remainingTriviaTime} min`
+                                : "You can play now!"}
+                        </p>
                     </div>
                 </div>
 
@@ -180,7 +197,7 @@ const ProfilePage = () => {
                     onClick={handleTriviaClick}
                     className="mt-10 px-8 py-3 text-lg rounded-full bg-[#67358E] text-white hover:bg-[#8B5FBF] transition-all"
                 >
-                    Try Trivia Questions
+                    Play Trivia Game
                 </button>
             </div>
         </div>

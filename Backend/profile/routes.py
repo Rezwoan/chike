@@ -104,11 +104,17 @@ def get_profile():
         None
     )
 
-    # Dummy trivia points today (replace with your own logic if needed)
-    trivia_points_today = 50
+    # Time remaining until next trivia attempt 
+    now = datetime.utcnow()
+    minutes_left = 0
+    if user.last_trivia_attempt and now - user.last_trivia_attempt < timedelta(minutes=1):
+        remaining_time = timedelta(hours=1) - (now - user.last_trivia_attempt)
+        minutes_left = remaining_time.total_seconds() // 60
+
 
     # Build response
     response = {
+        'id': user.id,
         'name': user.name,
         'email': user.email,
         'totalReferrals': total_referrals,
@@ -117,9 +123,10 @@ def get_profile():
         'totalRank': total_rank,
         'dailyRank': daily_rank or "N/A",
         'weeklyRank': weekly_rank or "N/A",
-        'triviaPointsToday': trivia_points_today,
-        'referralLink': f"https://example.com/signup?ref={user.referral_code}",
-        'total_earned' : user.total_earned
+        'remainingTriviaTime': minutes_left,
+        'referralLink': f"https://playchike.com/signup?ref={user.referral_code}",
+        'total_earned' : user.total_earned,
+        'total_points' : user.total_points,
     }
 
     return jsonify(response), 200

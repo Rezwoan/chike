@@ -34,7 +34,7 @@ def get_questions():
     now = datetime.utcnow()
 
     # Check if user has played within the last hour
-    if user.last_trivia_attempt and now - user.last_trivia_attempt < timedelta(hours=1):
+    if user.last_trivia_attempt and now - user.last_trivia_attempt < timedelta(minutes=1):
         remaining_time = timedelta(hours=1) - (now - user.last_trivia_attempt)
         minutes_left = remaining_time.total_seconds() // 60
         return jsonify({"error": f"Please wait {int(minutes_left)} more minutes before playing again."}), 403

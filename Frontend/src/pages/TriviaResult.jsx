@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
-const TriviaResult = ({ userAnswers }) => {
-    const [result, setResult] = useState(null);
-    const [loading, setLoading] = useState(true);
+const TriviaResult = () => {
+    const location = useLocation();
     const navigate = useNavigate();
 
+    const userId = location.state?.userId; // Get userId from navigation state
+    const userAnswers = location.state?.userAnswers;
+
+    const [result, setResult] = useState(null);
+    const [loading, setLoading] = useState(true);
+
     useEffect(() => {
-        if (!userAnswers) {
-            navigate("/"); // Redirect to home if no answers
+        if (!userId || !userAnswers) {
+            navigate("/"); // Redirect to home if no data
             return;
         }
 
@@ -19,7 +24,10 @@ const TriviaResult = ({ userAnswers }) => {
                     {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ answers: userAnswers }),
+                        body: JSON.stringify({
+                            user_id: userId,
+                            answers: userAnswers,
+                        }),
                     }
                 );
 
@@ -33,7 +41,7 @@ const TriviaResult = ({ userAnswers }) => {
         };
 
         checkResults();
-    }, [userAnswers, navigate]);
+    }, [userId, userAnswers, navigate]);
 
     if (loading)
         return (
@@ -46,7 +54,7 @@ const TriviaResult = ({ userAnswers }) => {
     const correctAnswers = result.score;
     const wrongAnswers = totalQuestions - correctAnswers;
     const notAnswered = totalQuestions - Object.keys(userAnswers).length;
-    const totalPoints = correctAnswers * 10;
+    const totalPoints = correctAnswers * 10; // 10 points per correct answer
 
     return (
         <div className="flex flex-col h-screen items-center justify-center bg-gray-100 p-6">
@@ -77,7 +85,7 @@ const TriviaResult = ({ userAnswers }) => {
                     </div>
                 </div>
 
-                {/* Bigger Correct Answers Box */}
+                {/* Bigger Box for Correct Answers & Points Earned */}
                 <div className="mt-4 p-6 bg-green-100 rounded-lg shadow-md">
                     <p className="text-lg font-medium text-green-700">
                         Correct Answers
@@ -87,10 +95,19 @@ const TriviaResult = ({ userAnswers }) => {
                     </p>
                 </div>
 
+                <div className="mt-4 p-6 bg-blue-100 rounded-lg shadow-md">
+                    <p className="text-lg font-medium text-blue-700">
+                        Points Earned
+                    </p>
+                    <p className="text-4xl font-bold text-blue-700">
+                        {totalPoints}
+                    </p>
+                </div>
+
                 {/* Profile Button */}
                 <button
                     className="mt-6 bg-purple-600 text-white px-6 py-3 rounded-lg text-lg font-semibold"
-                    onClick={() => navigate("/profile")}
+                    onClick={() => navigate("/login")}
                 >
                     Go to Profile
                 </button>
