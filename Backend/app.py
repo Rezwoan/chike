@@ -5,7 +5,7 @@ from referral.routes import referral_bp
 from base.routes import base_bp  # Import base routes
 from flask_cors import CORS
 from flask_apscheduler import APScheduler
-from referral.utils import get_daily_leaderboard, get_weekly_leaderboard
+from referral.utils import handle_daily_winner, handle_weekly_winner
 from datetime import datetime
 from extensions import cache
 import os
@@ -35,14 +35,6 @@ app.register_blueprint(profile_bp, url_prefix='/profile')
 app.register_blueprint(trivia_bp, url_prefix='/trivia')  # Trivia routes
 
 
-WINNER_DIR = "winner"
-DAILY_WINNER_FILE = os.path.join(WINNER_DIR, "daily_winner.txt")
-WEEKLY_WINNER_FILE = os.path.join(WINNER_DIR, "weekly_winner.txt")
-def ensure_winner_dir():
-    """Ensure the winner directory exists."""
-    if not os.path.exists(WINNER_DIR):
-        os.makedirs(WINNER_DIR)
-
 # **Add a simple '/' route for debugging**
 @app.route('/')
 def home():
@@ -68,32 +60,6 @@ with app.app_context():
 scheduler = APScheduler()
 
 
-def save_winner_to_file(winner, file_path):
-    """Append the winner's name to a text file."""
-    ensure_winner_dir()  # Ensure the directory exists
-    with open(file_path, "a") as file:  # Append mode
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        file.write(f"{timestamp} - Winner: {winner}\n")
-
-def refresh_daily_leaderboard():
-    """Refresh and cache the daily leaderboard."""
-    daily_leaderboard = get_daily_leaderboard()
-    cache.set('daily_leaderboard', daily_leaderboard, timeout=86400)  # Cache for 24 hours
-    if daily_leaderboard:
-        daily_winner = daily_leaderboard[0]["name"]  # Get the top winner
-        save_winner_to_file(daily_winner, DAILY_WINNER_FILE)
-    print(f"Daily leaderboard refreshed and winner saved at {datetime.now()}")
-
-def refresh_weekly_leaderboard():
-    """Refresh and cache the weekly leaderboard."""
-    weekly_leaderboard = get_weekly_leaderboard()
-    cache.set('weekly_leaderboard', weekly_leaderboard, timeout=604800)  # Cache for 7 days
-    if weekly_leaderboard:
-        weekly_winner = weekly_leaderboard[0]["name"]  # Get the top winner
-        save_winner_to_file(weekly_winner, WEEKLY_WINNER_FILE)
-    print(f"Weekly leaderboard refreshed and winner saved at {datetime.now()}")
-
-
 # Add this after your app initialization
 if __name__ == "__main__":
     # Configure the scheduler
@@ -103,21 +69,21 @@ if __name__ == "__main__":
     # Add daily leaderboard refresh job
     scheduler.add_job(
         id='daily_refresh',
-        func=refresh_daily_leaderboard,
+        func=handle_daily_winner,
         trigger='cron',
-        hour=0,
-        minute=0,
+        hour=23,
+        minute=55,
         timezone='US/Eastern'
     )
 
     # Add weekly leaderboard refresh job
     scheduler.add_job(
         id='weekly_refresh',
-        func=refresh_weekly_leaderboard,
+        func=handle_weekly_winner,
         trigger='cron',
-        day_of_week='sun',
-        hour=0,
-        minute=0,
+        day_of_week='sat',
+        hour=23,
+        minute=55,
         timezone='US/Eastern'
     )
 
