@@ -46,7 +46,7 @@ from flask import Blueprint, request, jsonify
 from models import User, Winner, Referral  # Adjust the import based on your project structure
 from extensions import db  # Your SQLAlchemy db instance
 
-admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+admin_bp = Blueprint('admin', __name__)
 
 @admin_bp.route('/users', methods=['GET'])
 def get_users():
