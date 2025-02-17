@@ -1,16 +1,17 @@
 from flask import Flask
 from extensions import db, migrate, cache
-from auth.routes import auth_bp
-from referral.routes import referral_bp
-from base.routes import base_bp  # Import base routes
 from flask_cors import CORS
 from flask_apscheduler import APScheduler
 from referral.utils import handle_daily_winner, handle_weekly_winner
 from datetime import datetime
 from extensions import cache
 import os
+from auth.routes import auth_bp
+from referral.routes import referral_bp
+from base.routes import base_bp  # Import base routes
 from profile.routes import profile_bp
 from trivia.routes import trivia_bp
+from admin_pannel.routes import admin_bp
 
 
 app = Flask(__name__)
@@ -31,8 +32,9 @@ cache.init_app(app)
 app.register_blueprint(base_bp)  # Base routes
 app.register_blueprint(auth_bp, url_prefix='/auth')  # Auth routes
 app.register_blueprint(referral_bp, url_prefix='/referral')  # Referral routes
-app.register_blueprint(profile_bp, url_prefix='/profile')
+app.register_blueprint(profile_bp, url_prefix='/profile') # Profile routes
 app.register_blueprint(trivia_bp, url_prefix='/trivia')  # Trivia routes
+app.register_blueprint(admin_bp, url_prefix='/admin') # Admin routes
 
 
 # **Add a simple '/' route for debugging**

@@ -1,8 +1,52 @@
+"""
+Admin Panel API Endpoints
+-------------------------
+This API provides endpoints for managing system data including users, referrals, winners, and analytics.
+
+Routes:
+--------
+User Management:
+   - GET    /admin/users
+            Retrieve a paginated list of users with optional filters (e.g., name, email).
+   - GET    /admin/users/<id>
+            Retrieve detailed information for a specific user.
+   - PUT    /admin/users/<id>
+            Update a specific user's details.
+   - DELETE /admin/users/<id>
+            Delete a user from the system.
+
+Referral Management:
+   - GET    /admin/referrals
+            Retrieve a paginated list of referral records with optional filters (e.g., referrer_id, date range).
+   - GET    /admin/referrals/<id>
+            Retrieve details for a specific referral record.
+
+Winner Management:
+   - GET    /admin/winners
+            Retrieve a paginated list of winners with optional filters (e.g., user_id, type).
+   - GET    /admin/winners/<id>
+            Retrieve details for a specific winner record.
+   - POST   /admin/winners
+            Create a new winner record.
+   - DELETE /admin/winners/<id>
+            Delete a winner record.
+
+Analytics/Dashboard:
+   - GET    /admin/dashboard
+            Retrieve aggregated statistics including total counts (users, referrals, winners), total earned amount, and top referrers.
+   - GET    /admin/stats
+            Retrieve detailed analytics data (e.g., daily new users and referrals for the past 30 days).
+
+Why:
+----
+These endpoints facilitate efficient administration of the system by enabling CRUD operations and providing insightful analytics. The API is designed with features like pagination, filtering, and robust error handling to ensure a secure and user-friendly management experience for the admin panel.
+"""
+
 from flask import Blueprint, request, jsonify
-from models import User  # Adjust the import based on your project structure
+from models import User, Winner, Referral  # Adjust the import based on your project structure
 from extensions import db  # Your SQLAlchemy db instance
 
-admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+admin_bp = Blueprint('admin', __name__)
 
 @admin_bp.route('/users', methods=['GET'])
 def get_users():
