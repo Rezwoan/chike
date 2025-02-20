@@ -44,7 +44,7 @@ These endpoints facilitate efficient administration of the system by enabling CR
 
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import User, Winner, Referral, Admin   # Adjust the import based on your project structure
+from models import User, Winner, Referral, Admin, Withdrawal  # Adjust the import based on your project structure
 from extensions import db  # Your SQLAlchemy db instance
 from datetime import datetime, timedelta
 
@@ -702,3 +702,183 @@ def get_stats():
     }
 
     return jsonify(stats_data), 200
+
+
+
+
+
+
+@admin_bp.route('/withdrawals', methods=['GET'])
+def list_withdrawals():
+    """
+    Admin: list all withdrawals (optionally filter by status/user_id).
+    GET /admin/withdrawals?admin_id=1&status=pending&user_id=10
+    """
+    # 1) Check admin_id
+    admin_id = request.args.get('admin_id', type=int)
+    if not admin_id:
+        return jsonify({"message": "Missing admin_id"}), 403
+    
+    admin = Admin.query.get(admin_id)
+    if not admin:
+        return jsonify({"message": "Invalid admin"}), 403
+
+    # 2) Handle filters
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('limit', 10, type=int)
+    status_filter = request.args.get('status')
+    user_id_filter = request.args.get('user_id', type=int)
+
+    query = Withdrawal.query
+    if status_filter:
+        query = query.filter(Withdrawal.status == status_filter)
+    if user_id_filter:
+        query = query.filter(Withdrawal.user_id == user_id_filter)
+
+    pagination = query.order_by(Withdrawal.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+
+    withdrawals_data = []
+    for w in pagination.items:
+        withdrawals_data.append({
+            "id": w.id,
+            "user_id": w.user_id,
+            "amount": w.amount,
+            "status": w.status,
+            "user_payment_info": w.user_payment_info,
+            "created_at": w.created_at.isoformat(),
+            "processed_at": w.processed_at.isoformat() if w.processed_at else None,
+            "completed_at": w.completed_at.isoformat() if w.completed_at else None
+        })
+
+    return jsonify({
+        "withdrawals": withdrawals_data,
+        "total": pagination.total,
+        "pages": pagination.pages,
+        "current_page": pagination.page
+    }), 200
+
+
+@admin_bp.route('/withdrawals/<int:withdrawal_id>/accept', methods=['PUT'])
+def accept_withdrawal(withdrawal_id):
+    """
+    Admin: Accepts (processes) a pending withdrawal.
+    Usage: /admin/withdrawals/<id>/accept?admin_id=1
+    Sets status to 'processing' and deducts from user's total_earned.
+    """
+    # 1) Check admin_id
+    admin_id = request.args.get('admin_id', type=int)
+    if not admin_id:
+        return jsonify({"message": "Missing admin_id"}), 403
+
+    admin = Admin.query.get(admin_id)
+    if not admin:
+        return jsonify({"message": "Invalid admin"}), 403
+
+    # 2) Proceed with withdrawal logic
+    withdrawal = Withdrawal.query.get(withdrawal_id)
+    if not withdrawal:
+        return jsonify({"message": "Withdrawal not found"}), 404
+
+    if withdrawal.status != 'pending':
+        return jsonify({
+            "message": f"Cannot accept a withdrawal with status '{withdrawal.status}'"
+        }), 400
+
+    user = User.query.get(withdrawal.user_id)
+    if not user:
+        return jsonify({"message": "Associated user not found"}), 404
+
+    if user.total_earned < withdrawal.amount:
+        return jsonify({"message": "User does not have sufficient balance"}), 400
+
+    # Deduct from the user's total_earned
+    user.total_earned -= withdrawal.amount
+
+    # Mark as processing
+    withdrawal.status = 'processing'
+    withdrawal.processed_at = datetime.utcnow()
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": "Error accepting withdrawal", "error": str(e)}), 500
+
+    return jsonify({"message": "Withdrawal accepted (now processing)"}), 200
+
+
+@admin_bp.route('/withdrawals/<int:withdrawal_id>/complete', methods=['PUT'])
+def complete_withdrawal(withdrawal_id):
+    """
+    Admin: Completes a 'processing' withdrawal (money has been sent).
+    Usage: /admin/withdrawals/<id>/complete?admin_id=1
+    Sets status to 'completed'.
+    """
+    # 1) Check admin_id
+    admin_id = request.args.get('admin_id', type=int)
+    if not admin_id:
+        return jsonify({"message": "Missing admin_id"}), 403
+
+    admin = Admin.query.get(admin_id)
+    if not admin:
+        return jsonify({"message": "Invalid admin"}), 403
+
+    # 2) Proceed with withdrawal logic
+    withdrawal = Withdrawal.query.get(withdrawal_id)
+    if not withdrawal:
+        return jsonify({"message": "Withdrawal not found"}), 404
+
+    if withdrawal.status != 'processing':
+        return jsonify({
+            "message": f"Cannot complete a withdrawal with status '{withdrawal.status}'"
+        }), 400
+
+    withdrawal.status = 'completed'
+    withdrawal.completed_at = datetime.utcnow()
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": "Error completing withdrawal", "error": str(e)}), 500
+
+    return jsonify({"message": "Withdrawal completed successfully"}), 200
+
+
+@admin_bp.route('/withdrawals/<int:withdrawal_id>/reject', methods=['PUT'])
+def reject_withdrawal(withdrawal_id):
+    """
+    Admin: Rejects a 'pending' withdrawal.
+    Usage: /admin/withdrawals/<id>/reject?admin_id=1
+    Sets status to 'rejected'.
+    """
+    # 1) Check admin_id
+    admin_id = request.args.get('admin_id', type=int)
+    if not admin_id:
+        return jsonify({"message": "Missing admin_id"}), 403
+
+    admin = Admin.query.get(admin_id)
+    if not admin:
+        return jsonify({"message": "Invalid admin"}), 403
+
+    # 2) Proceed with withdrawal logic
+    withdrawal = Withdrawal.query.get(withdrawal_id)
+    if not withdrawal:
+        return jsonify({"message": "Withdrawal not found"}), 404
+
+    if withdrawal.status not in ['pending']:
+        return jsonify({
+            "message": f"Cannot reject a withdrawal with status '{withdrawal.status}'"
+        }), 400
+
+    withdrawal.status = 'rejected'
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": "Error rejecting withdrawal", "error": str(e)}), 500
+
+    return jsonify({"message": "Withdrawal rejected"}), 200
