@@ -8,7 +8,7 @@ import json
 
 user_withdrawals_bp = Blueprint('user_withdrawals', __name__)
 
-withdrawals_bp = Blueprint('withdrawals', __name__)
+
 
 MIN_WITHDRAWAL_AMOUNT = 100.0  # example
 
