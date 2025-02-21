@@ -12,7 +12,7 @@ from base.routes import base_bp  # Import base routes
 from profile.routes import profile_bp
 from trivia.routes import trivia_bp
 from admin_pannel.routes import admin_bp
-from withdrawal.routes import withdrawal_bp
+from withdrawal.routes import user_withdrawals_bp
 
 
 app = Flask(__name__)
@@ -36,7 +36,7 @@ app.register_blueprint(referral_bp, url_prefix='/referral')  # Referral routes
 app.register_blueprint(profile_bp, url_prefix='/profile') # Profile routes
 app.register_blueprint(trivia_bp, url_prefix='/trivia')  # Trivia routes
 app.register_blueprint(admin_bp, url_prefix='/admin') # Admin routes
-app.register_blueprint(withdrawal_bp, url_prefix='/withdrawal')  # Withdrawal routes
+app.register_blueprint(user_withdrawals_bp, url_prefix='/withdrawal')  # Withdrawal routes
 
 
 # **Add a simple '/' route for debugging**
