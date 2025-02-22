@@ -11,7 +11,7 @@ const LeaderBoard = () => {
         const fetchLeaderboard = async () => {
             try {
                 const response = await fetch(
-                    "http://backend-python.playchike.com/referral/leaderboard"
+                    "https://backend-python.playchike.com/referral/leaderboard"
                 );
                 const result = await response.json();
                 setData(result); // Update state with fetched data
