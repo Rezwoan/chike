@@ -10,16 +10,26 @@ import SetPasswordPage from "./pages/SetPasswordPage";
 import ProfilePage from "./pages/ProfilePage";
 import TriviaGame from "./pages/TriviaGame";
 import TriviaResult from "./pages/TriviaResult";
-import WithdrawPage from "./pages/WithdrawPage"; // New import for withdrawal page
+import WithdrawPage from "./pages/WithdrawPage";
+
+// Admin Panel Components
+import AdminLoginPage from "./pages/AdminLoginPage";
+import AdminLayout from "./pages/AdminLayout";
+import DashboardPage from "./pages/DashboardPage";
+import UserManagementPage from "./pages/UserManagementPage";
+import ReferralManagementPage from "./pages/ReferralManagementPage";
+import WinnerManagementPage from "./pages/WinnerManagementPage";
+import WithdrawalManagementPage from "./pages/WithdrawalManagementPage";
 
 const App = () => {
     const [userAnswers, setUserAnswers] = useState(null);
-    const [userId, setUserId] = useState(null); // Store userId globally
+    const [userId, setUserId] = useState(null);
 
     return (
         <Router>
             <div>
                 <Routes>
+                    {/* User Routes */}
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/signup" element={<SignupPage />} />
                     <Route path="/login" element={<LoginPage />} />
@@ -29,8 +39,6 @@ const App = () => {
                     />
                     <Route path="/set-password" element={<SetPasswordPage />} />
                     <Route path="/welcome" element={<WelcomeAboard />} />
-
-                    {/* Profile Page - Receives userId from trivia & login */}
                     <Route
                         path="/profile"
                         element={
@@ -40,11 +48,7 @@ const App = () => {
                             />
                         }
                     />
-
-                    {/* Withdraw Page */}
                     <Route path="/withdraw" element={<WithdrawPage />} />
-
-                    {/* Trivia Game - Pass userId */}
                     <Route
                         path="/trivia"
                         element={
@@ -60,8 +64,6 @@ const App = () => {
                             )
                         }
                     />
-
-                    {/* Trivia Results - Pass userId and userAnswers */}
                     <Route
                         path="/trivia/results"
                         element={
@@ -75,6 +77,25 @@ const App = () => {
                             )
                         }
                     />
+
+                    {/* Admin Panel Routes */}
+                    <Route path="/admin/login" element={<AdminLoginPage />} />
+                    <Route path="/admin" element={<AdminLayout />}>
+                        <Route path="dashboard" element={<DashboardPage />} />
+                        <Route path="users" element={<UserManagementPage />} />
+                        <Route
+                            path="referrals"
+                            element={<ReferralManagementPage />}
+                        />
+                        <Route
+                            path="winners"
+                            element={<WinnerManagementPage />}
+                        />
+                        <Route
+                            path="withdrawals"
+                            element={<WithdrawalManagementPage />}
+                        />
+                    </Route>
                 </Routes>
                 <Footer />
             </div>

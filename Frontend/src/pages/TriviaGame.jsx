@@ -45,6 +45,17 @@ const TriviaGame = ({ userId, onFinish }) => {
         fetchQuestions();
     }, [userId, navigate]);
 
+    // Initialize the Google Ad once showAd is set to true
+    useEffect(() => {
+        if (showAd) {
+            try {
+                (window.adsbygoogle = window.adsbygoogle || []).push({});
+            } catch (e) {
+                console.error("Google Ads error:", e);
+            }
+        }
+    }, [showAd]);
+
     useEffect(() => {
         if (timeLeft === 0) {
             handleNextQuestion(null);
@@ -107,10 +118,15 @@ const TriviaGame = ({ userId, onFinish }) => {
             <div className="flex flex-col h-screen items-center justify-center bg-gray-100 p-6">
                 <div className="bg-white p-8 rounded-lg shadow-xl text-center">
                     <h2 className="text-2xl font-bold mb-4">Sponsored Ad</h2>
-                    {/* Google Ad Placeholder */}
-                    <div className="bg-gray-300 w-80 h-40 flex items-center justify-center text-lg font-medium text-gray-700">
-                        Google Ad Here
-                    </div>
+                    {/* Google AdSense Ad */}
+                    <ins
+                        className="adsbygoogle"
+                        style={{ display: "block" }}
+                        data-ad-client="ca-pub-9201425175707137"
+                        data-ad-slot="6686755904"
+                        data-ad-format="auto"
+                        data-full-width-responsive="true"
+                    ></ins>
                     <button
                         className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg text-lg font-semibold"
                         onClick={handleViewResults}
