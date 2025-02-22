@@ -65,5 +65,4 @@ class Withdrawal(db.Model):
     # Optional: Track updates automatically
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Relationship back to the User (if you want easy access from the model side)
-    user = db.relationship('User', backref='withdrawals', lazy=True)
+    
