@@ -10,6 +10,7 @@ import SetPasswordPage from "./pages/SetPasswordPage";
 import ProfilePage from "./pages/ProfilePage";
 import TriviaGame from "./pages/TriviaGame";
 import TriviaResult from "./pages/TriviaResult";
+import WithdrawPage from "./pages/WithdrawPage"; // New import for withdrawal page
 
 const App = () => {
     const [userAnswers, setUserAnswers] = useState(null);
@@ -39,6 +40,9 @@ const App = () => {
                             />
                         }
                     />
+
+                    {/* Withdraw Page */}
+                    <Route path="/withdraw" element={<WithdrawPage />} />
 
                     {/* Trivia Game - Pass userId */}
                     <Route

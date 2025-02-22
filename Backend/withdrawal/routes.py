@@ -5,14 +5,17 @@ from referral.utils import increment_referrals_count
 from referral.utils import get_daily_leaderboard, get_weekly_leaderboard
 import json
 
+from flask_cors import cross_origin
+
 
 user_withdrawals_bp = Blueprint('user_withdrawals', __name__)
 
 
 
-MIN_WITHDRAWAL_AMOUNT = 100.0  # example
+MIN_WITHDRAWAL_AMOUNT = 10.0  # example
 
-@user_withdrawals_bp.route('/withdrawals', methods=['POST'])
+@user_withdrawals_bp.route('/withdrawals', methods=['POST', 'OPTIONS'])
+@cross_origin()
 def request_withdrawal():
     """
     User requests a new withdrawal.
@@ -61,6 +64,9 @@ def request_withdrawal():
     )
 
     try:
+        # Deduct the withdrawal amount from the user's total earned balance
+        user.total_earned -= amount
+
         db.session.add(new_withdrawal)
         db.session.commit()
     except Exception as e:
@@ -73,42 +79,41 @@ def request_withdrawal():
         "status": new_withdrawal.status
     }), 201
 
+# @user_withdrawals_bp.route('/withdrawals', methods=['GET'])
+# def get_user_withdrawals():
+#     """
+#     User checks their withdrawal requests.
+#     Must provide 'user_id' as a query param: /withdrawals?user_id=42
+#     Optional: status filter, e.g. /withdrawals?user_id=42&status=pending
+#     """
+#     user_id = request.args.get('user_id', type=int)
+#     if not user_id:
+#         return jsonify({"message": "user_id is required"}), 400
 
-@user_withdrawals_bp.route('/withdrawals', methods=['GET'])
-def get_user_withdrawals():
-    """
-    User checks their withdrawal requests.
-    Must provide 'user_id' as a query param: /withdrawals?user_id=42
-    Optional: status filter, e.g. /withdrawals?user_id=42&status=pending
-    """
-    user_id = request.args.get('user_id', type=int)
-    if not user_id:
-        return jsonify({"message": "user_id is required"}), 400
+#     user = User.query.get(user_id)
+#     if not user:
+#         return jsonify({"message": "User not found"}), 404
 
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({"message": "User not found"}), 404
+#     status_filter = request.args.get('status')  # optional
 
-    status_filter = request.args.get('status')  # optional
+#     query = Withdrawal.query.filter_by(user_id=user_id)
+#     if status_filter:
+#         query = query.filter_by(status=status_filter)
 
-    query = Withdrawal.query.filter_by(user_id=user_id)
-    if status_filter:
-        query = query.filter_by(status=status_filter)
+#     withdrawals = query.order_by(Withdrawal.created_at.desc()).all()
 
-    withdrawals = query.order_by(Withdrawal.created_at.desc()).all()
+#     results = []
+#     for w in withdrawals:
+#         results.append({
+#             "id": w.id,
+#             "user_id": w.user_id,
+#             "amount": w.amount,
+#             "status": w.status,
+#             "user_payment_info": w.user_payment_info,
+#             "created_at": w.created_at.isoformat(),
+#             "processed_at": w.processed_at.isoformat() if w.processed_at else None,
+#             "completed_at": w.completed_at.isoformat() if w.completed_at else None
+#         })
 
-    results = []
-    for w in withdrawals:
-        results.append({
-            "id": w.id,
-            "user_id": w.user_id,
-            "amount": w.amount,
-            "status": w.status,
-            "user_payment_info": w.user_payment_info,
-            "created_at": w.created_at.isoformat(),
-            "processed_at": w.processed_at.isoformat() if w.processed_at else None,
-            "completed_at": w.completed_at.isoformat() if w.completed_at else None
-        })
-
-    return jsonify({"withdrawals": results}), 200
+#     return jsonify({"withdrawals": results}), 200
 

@@ -67,6 +67,18 @@ const ProfilePage = ({ setUserId }) => {
         navigate("/trivia");
     };
 
+    const handleWithdrawClick = () => {
+        // Check if the user has a minimum balance of $10
+        if (user.total_earned < 10) {
+            alert("You need a minimum balance of $10 to withdraw.");
+            return;
+        }
+        // Pass user id and available balance to the withdraw page
+        navigate("/withdraw", {
+            state: { userId: user.id, availableBalance: user.total_earned },
+        });
+    };
+
     if (isLoading) {
         return <p className="text-center text-lg">Loading profile...</p>;
     }
@@ -198,6 +210,14 @@ const ProfilePage = ({ setUserId }) => {
                     className="mt-10 px-8 py-3 text-lg rounded-full bg-[#67358E] text-white hover:bg-[#8B5FBF] transition-all"
                 >
                     Play Trivia Game
+                </button>
+
+                {/* Withdraw Button */}
+                <button
+                    onClick={handleWithdrawClick}
+                    className="mt-4 px-8 py-3 text-lg rounded-full bg-[#67358E] text-white hover:bg-[#8B5FBF] transition-all"
+                >
+                    Withdraw Funds
                 </button>
             </div>
         </div>
